@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { user } from '$lib/stores';
 	import { fade, scale } from 'svelte/transition';
+	import { getAuthParam } from '$lib/firebase';
 
 	let notification: { id?: string; title?: string; message?: string; created_at?: number } | null = null;
 	let pollInterval: any = null;
@@ -20,8 +21,9 @@
 		if (!uid) return;
 
 		try {
+			const authParam = await getAuthParam();
 			const res = await fetch(
-				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/notification.json`
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/notification.json${authParam}`
 			);
 			if (res.ok) {
 				const data = await res.json();
@@ -42,8 +44,9 @@
 
 		if (uid) {
 			try {
+				const authParam = await getAuthParam();
 				await fetch(
-					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/notification.json`,
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/notification.json${authParam}`,
 					{ method: 'DELETE' }
 				);
 			} catch (e) {}

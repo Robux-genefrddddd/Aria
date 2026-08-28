@@ -2,8 +2,6 @@ import { WEBUI_API_BASE_URL } from '$lib/constants';
 import { getUserPosition } from '$lib/utils';
 
 export const getUserGroups = async (token: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/groups`, {
 		method: 'GET',
 		headers: {
@@ -12,25 +10,15 @@ export const getUserGroups = async (token: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return [];
+			return res.json().catch(() => []);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => []);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res ?? [];
 };
 
 export const getUserDefaultPermissions = async (token: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/default/permissions`, {
 		method: 'GET',
 		headers: {
@@ -39,25 +27,15 @@ export const getUserDefaultPermissions = async (token: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || {};
 };
 
 export const updateUserDefaultPermissions = async (token: string, permissions: object) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/default/permissions`, {
 		method: 'POST',
 		headers: {
@@ -69,25 +47,15 @@ export const updateUserDefaultPermissions = async (token: string, permissions: o
 		})
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || permissions;
 };
 
 export const getUserDefaultPermissionsDefaults = async (token: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/default/permissions/defaults`, {
 		method: 'GET',
 		headers: {
@@ -96,20 +64,12 @@ export const getUserDefaultPermissionsDefaults = async (token: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || {};
 };
 
 export const updateUserRole = async (token: string, id: string, role: string) => {
@@ -237,7 +197,6 @@ export const searchUsers = async (
 	page = 1,
 	signal?: AbortSignal
 ) => {
-	let error = null;
 	let res = null;
 
 	const searchParams = new URLSearchParams();
@@ -265,19 +224,10 @@ export const searchUsers = async (
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			if (signal?.aborted) return null;
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
+		.catch(() => null);
 
 	return res;
 };
@@ -461,8 +411,6 @@ export const getUserVariables = async (token: string) => {
 };
 
 export const updateUserVariables = async (token: string, variables: Record<string, string>) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/variables/update`, {
 		method: 'POST',
 		headers: {
@@ -474,20 +422,12 @@ export const updateUserVariables = async (token: string, variables: Record<strin
 		})
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || variables;
 };
 
 export const getAndUpdateUserLocation = async (token: string) => {
@@ -506,8 +446,6 @@ export const getAndUpdateUserLocation = async (token: string) => {
 };
 
 export const getUserActiveStatusById = async (token: string, userId: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/${userId}/active`, {
 		method: 'GET',
 		headers: {
@@ -516,18 +454,10 @@ export const getUserActiveStatusById = async (token: string, userId: string) => 
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
+		.catch(() => null);
 
 	return res;
 };
@@ -609,8 +539,6 @@ export const updateUserById = async (token: string, userId: string, user: UserUp
 };
 
 export const getUserGroupsById = async (token: string, userId: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/${userId}/groups`, {
 		method: 'GET',
 		headers: {
@@ -619,25 +547,15 @@ export const getUserGroupsById = async (token: string, userId: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return [];
+			return res.json().catch(() => []);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => []);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res ?? [];
 };
 
 export const getUserPreview = async (token: string, userId: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/${userId}/preview`, {
 		method: 'GET',
 		headers: {
@@ -646,18 +564,10 @@ export const getUserPreview = async (token: string, userId: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
+		.catch(() => null);
 
 	return res;
 };
@@ -715,7 +625,6 @@ export const getUserUsage = async (
 	token: string,
 	options: { days?: number; startDate?: number | null; endDate?: number | null } = {}
 ): Promise<UserUsageResponse | null> => {
-	let error = null;
 	const searchParams = new URLSearchParams();
 
 	if (options.days) searchParams.append('days', options.days.toString());
@@ -730,18 +639,10 @@ export const getUserUsage = async (
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
+		.catch(() => null);
 
 	return res;
 };

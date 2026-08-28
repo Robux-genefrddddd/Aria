@@ -2,6 +2,7 @@
 	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { getUserPreview } from '$lib/apis/users';
+	import { getAuthParam } from '$lib/firebase';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
@@ -27,8 +28,9 @@
 			// Fetch real data from Firebase Realtime Database
 			let fbUser: any = null;
 			try {
+				const authParam = await getAuthParam();
 				const fbRes = await fetch(
-					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}.json`
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}.json${authParam}`
 				);
 				if (fbRes.ok) {
 					fbUser = await fbRes.json();
@@ -110,8 +112,9 @@
 		if (!notifMessage.trim() || !userId) return;
 		sendingNotif = true;
 		try {
+			const authParam = await getAuthParam();
 			const res = await fetch(
-				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}/notification.json`,
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}/notification.json${authParam}`,
 				{
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
@@ -140,10 +143,11 @@
 		if (!userId) return;
 		savingLimit = true;
 		try {
+			const authParam = await getAuthParam();
 			const limitNum = Number(customTokenLimit) || 1300;
 			await Promise.all([
 				fetch(
-					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}/token_limit.json`,
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}/token_limit.json${authParam}`,
 					{
 						method: 'PUT',
 						headers: { 'Content-Type': 'application/json' },
@@ -151,7 +155,7 @@
 					}
 				),
 				fetch(
-					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}.json`,
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}.json${authParam}`,
 					{
 						method: 'PATCH',
 						headers: { 'Content-Type': 'application/json' },

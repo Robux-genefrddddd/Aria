@@ -10,6 +10,7 @@
 		chats,
 		settings,
 		chatId,
+		chatTitle,
 		tags,
 		folders as _folders,
 		showSidebar,
