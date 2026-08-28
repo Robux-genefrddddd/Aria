@@ -26,42 +26,8 @@ export const getModels = async (
 	base: boolean = false,
 	refresh: boolean = false
 ) => {
-	const searchParams = new URLSearchParams();
-	if (refresh) {
-		searchParams.append('refresh', 'true');
-	}
-
-	let error = null;
-	const res = await fetch(
-		`${WEBUI_BASE_URL}/api/models${base ? '/base' : ''}?${searchParams.toString()}`,
-		{
-			method: 'GET',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-				...(token && { authorization: `Bearer ${token}` })
-			}
-		}
-	)
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			error = err;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		console.warn('Backend models offline. Returning empty models list.');
-	}
-
-	let models = res?.data ?? [];
-	if (!models || models.length === 0) {
-		const { getAriaModelsList } = await import('$lib/utils/ariaModels');
-		models = getAriaModelsList();
-	}
+	const { getAriaModelsList } = await import('$lib/utils/ariaModels');
+	let models = getAriaModelsList();
 
 	if (connections && !base) {
 		let localModels = [];
@@ -1508,50 +1474,7 @@ export const DEFAULT_BACKEND_CONFIG = {
 };
 
 export const getBackendConfig = async () => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_BASE_URL}/api/config`, {
-		method: 'GET',
-		credentials: 'include',
-		headers: {
-			'Content-Type': 'application/json'
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) return DEFAULT_BACKEND_CONFIG;
-			try {
-				return await res.json();
-			} catch {
-				return DEFAULT_BACKEND_CONFIG;
-			}
-		})
-		.catch(() => {
-			return DEFAULT_BACKEND_CONFIG;
-		});
-
-	if (error) {
-		if (error instanceof TypeError) {
-			try {
-				const probeRes = await fetch(`${WEBUI_BASE_URL}/api/config`, {
-					method: 'GET',
-					credentials: 'include',
-					redirect: 'manual',
-					headers: { 'Content-Type': 'application/json' }
-				});
-				if (
-					probeRes.type === 'opaqueredirect' ||
-					(probeRes.status >= 300 && probeRes.status < 400)
-				) {
-					throw { authRedirect: true };
-				}
-			} catch (probeErr: any) {
-				if (probeErr?.authRedirect) throw probeErr;
-			}
-		}
-		return DEFAULT_BACKEND_CONFIG;
-	}
-
-	return res || DEFAULT_BACKEND_CONFIG;
+	return DEFAULT_BACKEND_CONFIG;
 };
 
 export const getChangelog = async () => {

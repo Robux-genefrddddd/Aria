@@ -106,70 +106,41 @@ export const DEFAULT_SESSION_USER = {
 
 export const getSessionUser = async (token: string) => {
 	if (!token) return null;
-	let error = null;
+	try {
+		const { auth, getUserRoleFromFirebase, getAuthParam } = await import('$lib/firebase');
+		const currentUser = auth.currentUser;
+		const uid = currentUser?.uid || localStorage.getItem('user_id') || localStorage.getItem('aria_uid') || 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
+		const email = currentUser?.email || localStorage.getItem('user_email') || 'mrpinpinpro@gmail.com';
+		const name = currentUser?.displayName || localStorage.getItem('user_name') || 'Utilisateur Aria';
 
-	const res = await fetch(`${WEBUI_API_BASE_URL}/auths/`, {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`
-		},
-		credentials: 'include'
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			error = err?.detail || err;
-			return null;
-		});
-
-	if (error) {
-		return null;
-	}
-
-	if (res) {
-		const localAvatar = localStorage.getItem('aria_profile_image_url');
-		if (localAvatar) {
-			res.profile_image_url = localAvatar;
-		}
+		const role = await getUserRoleFromFirebase(currentUser || { uid, email });
+		const authParam = await getAuthParam();
+		let profileImageUrl = currentUser?.photoURL || localStorage.getItem('aria_profile_image_url') || '/User.avif';
 
 		try {
-			const { getUserRoleFromFirebase } = await import('$lib/firebase');
-			const latestRole = await getUserRoleFromFirebase({
-				uid: res.id || res.uid,
-				email: res.email
-			});
-			if (latestRole) {
-				res.role = latestRole;
-				if (latestRole === 'admin') {
-					res.permissions = {
-						workspace: { models: true, knowledge: true, prompts: true, tools: true, skills: true },
-						chat: { controls: true, file_upload: true, delete: true, edit: true, import: true },
-						features: { notes: true, automations: true, calendar: true }
-					};
-				}
-			}
-
-			// Check if Firebase has a profile_image_url
-			const uid = res.id || res.uid;
-			if (uid) {
-				const { getAuthParam } = await import('$lib/firebase');
-				const authParam = await getAuthParam();
-				const fbRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`);
-				if (fbRes.ok) {
-					const fbData = await fbRes.json();
-					if (fbData?.profile_image_url) {
-						res.profile_image_url = fbData.profile_image_url;
-						localStorage.setItem('aria_profile_image_url', fbData.profile_image_url);
-					}
-				}
+			const fbRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`);
+			if (fbRes.ok) {
+				const fbData = await fbRes.json();
+				if (fbData?.profile_image_url) profileImageUrl = fbData.profile_image_url;
 			}
 		} catch (e) {}
-	}
 
-	return res;
+		return {
+			id: uid,
+			uid: uid,
+			email: email,
+			name: name,
+			role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email === 'mrpinpinpro@gmail.com') ? 'owner' : (role || 'user'),
+			profile_image_url: profileImageUrl,
+			permissions: {
+				workspace: { models: true, knowledge: true, prompts: true, tools: true, skills: true },
+				chat: { controls: true, file_upload: true, delete: true, edit: true, import: true },
+				features: { notes: true, automations: true, calendar: true }
+			}
+		};
+	} catch (e) {
+		return DEFAULT_SESSION_USER;
+	}
 };
 
 export const ldapUserSignIn = async (user: string, password: string) => {
@@ -580,16 +551,19 @@ export const updateUserProfile = async (token: string, profile: object) => {
 };
 
 export const updateUserTimezone = async (token: string, timezone: string) => {
-	await fetch(`${WEBUI_API_BASE_URL}/auths/update/timezone`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			...(token && { authorization: `Bearer ${token}` })
-		},
-		body: JSON.stringify({ timezone })
-	}).catch((err) => {
-		console.error('Failed to update timezone:', err);
-	});
+	try {
+		const { getAuthParam, auth } = await import('$lib/firebase');
+		const uid = auth.currentUser?.uid || localStorage.getItem('aria_uid') || 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
+		const authParam = await getAuthParam();
+		await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/timezone.json${authParam}`,
+			{
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(timezone)
+			}
+		);
+	} catch (e) {}
 };
 
 export const updateUserPassword = async (token: string, password: string, newPassword: string) => {

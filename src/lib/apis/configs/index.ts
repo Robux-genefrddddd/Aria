@@ -773,50 +773,27 @@ export const setDefaultPromptSuggestions = async (token: string, promptSuggestio
 };
 
 export const getBanners = async (token: string): Promise<Banner[]> => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/configs/banners`, {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`
+	try {
+		const { getAuthParam } = await import('$lib/firebase');
+		const authParam = await getAuthParam();
+		const res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/banners.json${authParam}`);
+		if (res.ok) {
+			const data = await res.json();
+			if (Array.isArray(data)) return data;
 		}
-	})
-		.then(async (res) => {
-			if (!res.ok) return [];
-			return res.json().catch(() => []);
-		})
-		.catch(() => []);
-
-	return res || [];
+	} catch (e) {}
+	return [];
 };
 
 export const setBanners = async (token: string, banners: Banner[]) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/configs/banners`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			banners: banners
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
+	try {
+		const { getAuthParam } = await import('$lib/firebase');
+		const authParam = await getAuthParam();
+		await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/banners.json${authParam}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(banners)
 		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	} catch (e) {}
+	return banners;
 };

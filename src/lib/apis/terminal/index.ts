@@ -93,13 +93,7 @@ export type TerminalServer = {
 };
 
 export const getTerminalServers = async (token: string): Promise<TerminalServer[]> => {
-	const res = await fetch(`${WEBUI_API_BASE_URL}/terminals/`, {
-		headers: {
-			Authorization: `Bearer ${token}`
-		}
-	}).catch(() => null);
-	if (!res || !res.ok) return [];
-	return res.json().catch(() => []);
+	return [];
 };
 
 export const getTerminalConfig = async (

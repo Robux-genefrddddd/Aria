@@ -299,24 +299,7 @@ export const updateUserSettings = async (token: string, settings: object) => {
 	} catch (e) {
 		console.warn('Firebase settings save error:', e);
 	}
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/settings/update`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			...settings
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) return null;
-			return res.json().catch(() => null);
-		})
-		.catch(() => null);
-
-	return res || settings;
+	return settings;
 };
 
 export const getUserInfoById = async (token: string, userId: string) => {

@@ -565,42 +565,34 @@ export const getAllUserChats = async (token: string) => {
 };
 
 export const getAllTags = async (token: string) => {
-	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/all/tags`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			...(token && { authorization: `Bearer ${token}` })
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) return [];
-			return res.json().catch(() => []);
-		})
-		.catch(() => []);
-
-	return res || [];
+	try {
+		const allChats = await getChatList(token);
+		const tagsSet = new Set<string>();
+		allChats.forEach((chat: any) => {
+			if (Array.isArray(chat.tags)) {
+				chat.tags.forEach((t: any) => {
+					const name = typeof t === 'string' ? t : t.name;
+					if (name) tagsSet.add(name);
+				});
+			}
+		});
+		return Array.from(tagsSet).map((name) => ({ name }));
+	} catch (e) {
+		return [];
+	}
 };
 
 export const getPinnedChatList = async (token: string = '') => {
-	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/pinned`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			...(token && { authorization: `Bearer ${token}` })
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) return [];
-			return res.json().catch(() => []);
-		})
-		.catch(() => []);
-
-	return (res || []).map((chat) => ({
-		...chat,
-		time_range: getTimeRange(chat.updated_at)
-	}));
+	try {
+		const allChats = await getChatList(token);
+		const pinned = allChats.filter((c: any) => c.pinned === true || c.is_pinned === true || c.pinned_at);
+		return pinned.map((chat: any) => ({
+			...chat,
+			time_range: getTimeRange(chat.updated_at || Date.now())
+		}));
+	} catch (e) {
+		return [];
+	}
 };
 
 export const getChatListByTagName = async (token: string = '', tagName: string) => {

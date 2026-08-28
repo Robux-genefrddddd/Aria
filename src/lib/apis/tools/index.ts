@@ -1,477 +1,120 @@
-import { WEBUI_API_BASE_URL } from '$lib/constants';
+import { getAuthParam } from '$lib/firebase';
 
-export const createNewTool = async (token: string, tool: object) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/create`, {
-		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			...tool
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+export const createNewTool = async (token: string, tool: any) => {
+	const toolId = tool?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `tool-${Date.now()}`);
+	const newTool = { ...tool, id: toolId, updated_at: Math.floor(Date.now() / 1000) };
+	try {
+		const authParam = await getAuthParam();
+		await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools/${toolId}.json${authParam}`,
+			{
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(newTool)
+			}
+		);
+	} catch (e) {}
+	return newTool;
 };
 
 export const loadToolByUrl = async (token: string = '', url: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/load/url`, {
-		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			url
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return null;
 };
 
 export const getTools = async (token: string = '', query: string | null = null) => {
-	let error = null;
-
-	const searchParams = new URLSearchParams();
-	if (query) searchParams.append('query', query);
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/?${searchParams.toString()}`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
+	try {
+		const authParam = await getAuthParam();
+		const res = await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools.json${authParam}`
+		);
+		if (res.ok) {
+			const data = await res.json();
+			if (data && typeof data === 'object') {
+				const list = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+				if (query) {
+					const q = query.toLowerCase();
+					return list.filter((t: any) => (t?.name || '').toLowerCase().includes(q));
+				}
+				return list;
+			}
 		}
-	})
-		.then(async (res) => {
-			if (!res.ok) return [];
-			return res.json().catch(() => []);
-		})
-		.catch(() => []);
-
-	return res || [];
+	} catch (e) {}
+	return [];
 };
 
 export const getToolList = async (token: string = '') => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/list`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return getTools(token);
 };
 
 export const exportTools = async (token: string = '') => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/export`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return getTools(token);
 };
 
 export const getToolById = async (token: string, id: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	try {
+		const authParam = await getAuthParam();
+		const res = await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools/${id}.json${authParam}`
+		);
+		if (res.ok) return await res.json();
+	} catch (e) {}
+	return null;
 };
 
 export const updateToolById = async (token: string, id: string, tool: object) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/update`, {
-		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			...tool
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
+	try {
+		const authParam = await getAuthParam();
+		const existing = await getToolById(token, id);
+		const updated = { ...(existing || {}), ...tool, id, updated_at: Math.floor(Date.now() / 1000) };
+		await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools/${id}.json${authParam}`,
+			{
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(updated)
+			}
+		);
+		return updated;
+	} catch (e) {
+		return null;
 	}
-
-	return res;
 };
 
 export const updateToolAccessGrants = async (token: string, id: string, accessGrants: any[]) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/access/update`, {
-		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({ access_grants: accessGrants })
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return true;
 };
 
 export const deleteToolById = async (token: string, id: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/delete`, {
-		method: 'DELETE',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	try {
+		const authParam = await getAuthParam();
+		await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools/${id}.json${authParam}`,
+			{ method: 'DELETE' }
+		);
+	} catch (e) {}
+	return true;
 };
 
 export const getToolValvesById = async (token: string, id: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/valves`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return {};
 };
 
 export const getToolValvesSpecById = async (token: string, id: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/valves/spec`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return {};
 };
 
 export const updateToolValvesById = async (token: string, id: string, valves: object) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/valves/update`, {
-		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			...valves
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return valves;
 };
 
 export const getUserValvesById = async (token: string, id: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/valves/user`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return {};
 };
 
 export const getUserValvesSpecById = async (token: string, id: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/valves/user/spec`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return {};
 };
 
 export const updateUserValvesById = async (token: string, id: string, valves: object) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/tools/id/${id}/valves/user/update`, {
-		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			authorization: `Bearer ${token}`
-		},
-		body: JSON.stringify({
-			...valves
-		})
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return valves;
 };
