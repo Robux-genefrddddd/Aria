@@ -1252,8 +1252,10 @@
 							}
 
 							const uid = sessionUser.id || sessionUser.uid || 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
+							const { getAuthParam } = await import('$lib/firebase');
+							const authParam = await getAuthParam();
 							const fbRes = await fetch(
-								`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`
+								`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`
 							);
 							if (fbRes.ok) {
 								const fbData = await fbRes.json();
@@ -1283,7 +1285,7 @@
 							if (sessionUser.token_limit === undefined || sessionUser.token_limit === null) {
 								try {
 									const tlRes = await fetch(
-										`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/token_limit.json`
+										`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/token_limit.json${authParam}`
 									);
 									if (tlRes.ok) {
 										const tlData = await tlRes.json();

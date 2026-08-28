@@ -76,8 +76,10 @@
 				role: _user.role,
 				token_limit: tokenLimitNum
 			});
+			const { getAuthParam } = await import('$lib/firebase');
+			const authParam = await getAuthParam();
 			await fetch(
-				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${selectedUser.id}/token_limit.json`,
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${selectedUser.id}/token_limit.json${authParam}`,
 				{
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
