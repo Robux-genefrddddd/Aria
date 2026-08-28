@@ -493,6 +493,28 @@
 	};
 
 	const selectItem = (item, index: number) => {
+		const isBetaModel =
+			['aria-plus', 'aria-code'].includes(item.value) || item.model?.info?.meta?.beta;
+		const userRole = ($user?.role || '').toLowerCase().trim();
+		const hasBetaAccess =
+			userRole === 'owner' ||
+			userRole === 'admin' ||
+			userRole === 'beta_tester' ||
+			userRole === 'beta-tester' ||
+			userRole === 'tester' ||
+			userRole === 'beta' ||
+			$user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ||
+			$user?.email?.toLowerCase() === 'mrpinpinpro@gmail.com';
+
+		if (isBetaModel && !hasBetaAccess) {
+			toast.warning(
+				$i18n.t(
+					'Accès réservé : Ce modèle nécessite le rôle Bêta-Testeur.'
+				)
+			);
+			return;
+		}
+
 		selectedModelIdx = index;
 
 		if (values) {
