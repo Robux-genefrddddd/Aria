@@ -187,6 +187,18 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 		if (existingUser?.role) {
 			role = existingUser.role;
 			payload.role = role;
+		} else {
+			// Fallback: lire le rôle depuis user_index (modifiable par l'owner même sans règle write sur users/$uid)
+			try {
+				const idxRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index/${uid}.json${authParam}`);
+				if (idxRes.ok) {
+					const idxData = await idxRes.json();
+					if (idxData?.role && idxData.role !== 'user') {
+						role = idxData.role;
+						payload.role = role;
+					}
+				}
+			} catch (e) {}
 		}
 
 		await fetch(dbUrl, {
@@ -492,11 +504,17 @@ export const updateFirebaseUserRole = async (uid: string, role: string) => {
 	}
 	try {
 		const authParam = await getAuthParam();
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
-		await fetch(dbUrl, {
+		// Écrire dans users/${uid} (nécessite règle owner dans Firebase Rules)
+		await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ role, updatedAt: Date.now() })
+		});
+		// Écrire aussi dans user_index/${uid} (l'owner peut écrire via règle owner)
+		await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index/${uid}.json${authParam}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ role })
 		});
 	} catch (e) {
 		console.warn('Failed to update role in Firebase database:', e);
