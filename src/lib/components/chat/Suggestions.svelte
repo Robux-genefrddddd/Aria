@@ -58,8 +58,28 @@
 		}
 	};
 
-	$: if (suggestionPrompts) {
-		sortedPrompts = [...(suggestionPrompts ?? [])].sort(() => Math.random() - 0.5);
+	const DEFAULT_SUGGESTIONS = [
+		{
+			title: ['🚀 Script Roblox Luau', 'Fly & Mouvement'],
+			content: 'Crée un script de Fly sécurisé en Luau pour Roblox Studio avec RemoteEvent et vérification serveur.'
+		},
+		{
+			title: ['🛒 Économie & Shop', 'Sauvegarde DataStore'],
+			content: 'Comment créer un système de boutique Roblox avec sauvegarde DataStore2 et protection contre le dupe ?'
+		},
+		{
+			title: ['⚔️ Combat & Hitbox', 'Optimisation Raycast'],
+			content: 'Écris un système de combat Roblox optimisé avec Hitbox Raycast côté client et validation serveur.'
+		},
+		{
+			title: ['🎨 Interface UI', 'TweenService Animations'],
+			content: 'Crée un script d\'animation d\'interface UI Roblox moderne et fluide avec TweenService.'
+		}
+	];
+
+	$: {
+		const rawPrompts = (suggestionPrompts && suggestionPrompts.length > 0) ? suggestionPrompts : DEFAULT_SUGGESTIONS;
+		sortedPrompts = [...rawPrompts].sort(() => Math.random() - 0.5);
 		getFilteredPrompts(inputValue);
 	}
 </script>
