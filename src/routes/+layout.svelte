@@ -578,7 +578,7 @@
 											if (parsed?.error) {
 												return `data: {"error":{"message":"Une erreur est survenue. Veuillez réessayer.","type":"server_error","code":"aria_error"}}`;
 											}
-											const content: string = parsed?.choices?.[0]?.delta?.content || '';
+											const content = parsed?.choices?.[0]?.delta?.content || '';
 											if (content) {
 												const lower = content.toLowerCase();
 												if (_ariaProviderNames.some((n) => lower.includes(n)) && lower.includes('quota')) {
