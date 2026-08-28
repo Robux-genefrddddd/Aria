@@ -424,10 +424,12 @@ export const getTokenWindowKey = (): string => {
 /** Limite de tokens par rôle */
 export const getRoleTokenLimit = (user: any): number => {
 	if (!user) return 500;
-	if (user.token_limit) return Number(user.token_limit);
 	const role = user.role || '';
+	// Role check first — owner/admin are always infinite regardless of stored token_limit
 	if (role === 'owner' || user.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3') return Infinity;
 	if (role === 'admin') return Infinity;
+	// Custom override only for non-privileged users
+	if (user.token_limit && Number(user.token_limit) > 0) return Number(user.token_limit);
 	if (role === 'beta_tester') return 1000;
 	return 500;
 };
