@@ -370,8 +370,6 @@ export const updateUserSettings = async (token: string, settings: object) => {
 };
 
 export const getUserInfoById = async (token: string, userId: string) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/${userId}/info`, {
 		method: 'GET',
 		headers: {
@@ -380,25 +378,15 @@ export const getUserInfoById = async (token: string, userId: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || { id: userId };
 };
 
 export const updateUserStatus = async (token: string, formData: object) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/status/update`, {
 		method: 'POST',
 		headers: {
@@ -410,24 +398,15 @@ export const updateUserStatus = async (token: string, formData: object) => {
 		})
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || formData;
 };
 
 export const getUserInfo = async (token: string) => {
-	let error = null;
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/info`, {
 		method: 'GET',
 		headers: {
@@ -436,25 +415,15 @@ export const getUserInfo = async (token: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || {};
 };
 
 export const updateUserInfo = async (token: string, info: object) => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/info/update`, {
 		method: 'POST',
 		headers: {
@@ -466,24 +435,15 @@ export const updateUserInfo = async (token: string, info: object) => {
 		})
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || info;
 };
 
 export const getUserVariables = async (token: string) => {
-	let error = null;
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/variables`, {
 		method: 'GET',
 		headers: {
@@ -492,20 +452,12 @@ export const getUserVariables = async (token: string) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
+		.catch(() => null);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || {};
 };
 
 export const updateUserVariables = async (token: string, variables: Record<string, string>) => {

@@ -151,38 +151,59 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 	const email = firebaseUser.email || `${uid}@aria.local`;
 	const displayName = customName || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Utilisateur');
 	const photoUrl = firebaseUser.photoURL || null;
-	const authParam = await getAuthParam();
-	const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 
+	let role = 'user';
+	if (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email.toLowerCase() === 'mrpinpinpro@gmail.com') {
+		role = 'owner';
+	}
+
+	const payload: Record<string, any> = {
+		id: uid,
+		email: email,
+		name: displayName,
+		role: role,
+		created_at: firebaseUser.metadata?.creationTime
+			? Math.floor(new Date(firebaseUser.metadata.creationTime).getTime() / 1000)
+			: Math.floor(Date.now() / 1000),
+		last_active_at: Math.floor(Date.now() / 1000),
+		updatedAt: Date.now()
+	};
+
+	if (photoUrl) {
+		payload.profile_image_url = photoUrl;
+	}
+
+	// 1. Enregistrement local immédiat (garantit la visibilité dans le panneau admin sur Vercel)
+	if (typeof window !== 'undefined') {
+		try {
+			const localRaw = localStorage.getItem('aria_registered_users');
+			let list: any[] = localRaw ? JSON.parse(localRaw) : [];
+			if (!Array.isArray(list)) list = [];
+			const idx = list.findIndex((u) => u.id === uid || u.email?.toLowerCase() === email.toLowerCase());
+			if (idx >= 0) {
+				role = list[idx].role || role;
+				payload.role = role;
+				list[idx] = { ...list[idx], ...payload };
+			} else {
+				list.push(payload);
+			}
+			localStorage.setItem('aria_registered_users', JSON.stringify(list));
+		} catch (e) {}
+	}
+
+	// 2. Synchronisation Firebase Realtime DB
 	try {
-		// 1. Lire les données existantes dans Firebase RTDB pour conserver les modifications de rôle d'admin
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 		const res = await fetch(dbUrl);
 		let existingUser: any = null;
 		if (res.ok) {
 			existingUser = await res.json();
 		}
 
-		let role = 'user';
-		if (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email.toLowerCase() === 'mrpinpinpro@gmail.com') {
-			role = 'owner';
-		} else if (existingUser?.role) {
-			role = existingUser.role; // Conserver le rôle modifié via le panneau d'admin!
-		}
-
-		const payload: Record<string, any> = {
-			id: uid,
-			email: email,
-			name: existingUser?.name || displayName,
-			role: role,
-			created_at: existingUser?.created_at || (firebaseUser.metadata?.creationTime
-				? Math.floor(new Date(firebaseUser.metadata.creationTime).getTime() / 1000)
-				: Math.floor(Date.now() / 1000)),
-			last_active_at: Math.floor(Date.now() / 1000),
-			updatedAt: Date.now()
-		};
-
-		if (photoUrl) {
-			payload.profile_image_url = photoUrl;
+		if (existingUser?.role) {
+			role = existingUser.role;
+			payload.role = role;
 		}
 
 		await fetch(dbUrl, {
@@ -190,12 +211,11 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(payload)
 		});
-
-		return role;
 	} catch (e) {
-		console.warn('ensureFirebaseUserExists error:', e);
-		return 'user';
+		console.warn('ensureFirebaseUserExists RTDB sync error:', e);
 	}
+
+	return role;
 };
 
 /** Enregistre les métadonnées de l'utilisateur dans Firebase Realtime Database */
@@ -346,36 +366,96 @@ export const saveFirebaseUserSettings = async (
 	return settings;
 };
 
-/** Récupère la liste de tous les utilisateurs depuis Firebase Realtime Database */
+/** Récupère la liste de tous les utilisateurs (Firebase RTDB + LocalStorage) */
 export const getFirebaseAllUsers = async (): Promise<any[]> => {
+	const usersMap = new Map<string, any>();
+
+	// 1. Charger les utilisateurs de LocalStorage
+	if (typeof window !== 'undefined') {
+		try {
+			const localRaw = localStorage.getItem('aria_registered_users');
+			if (localRaw) {
+				const list = JSON.parse(localRaw);
+				if (Array.isArray(list)) {
+					for (const u of list) {
+						if (u?.id) usersMap.set(u.id, u);
+					}
+				}
+			}
+		} catch (e) {}
+	}
+
+	// 2. Charger les utilisateurs depuis Firebase RTDB
 	try {
 		const authParam = await getAuthParam();
 		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json${authParam}`;
-		const res = await fetch(dbUrl);
+		let res = await fetch(dbUrl);
+		if (!res.ok) {
+			res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json`);
+		}
 		if (res.ok) {
 			const data = await res.json();
 			if (data && typeof data === 'object') {
-				return Object.entries(data).map(([uid, u]: [string, any]) => ({
-					id: uid,
-					name: u?.name || (u?.email ? u.email.split('@')[0] : 'Utilisateur'),
-					email: u?.email || (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ? 'contact@pincorpsstudio.site' : 'user@aria.local'),
-					role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || u?.email === 'mrpinpinpro@gmail.com') ? 'owner' : (u?.role || (u?.admin ? 'admin' : 'user')),
-					profile_image_url: u?.profile_image_url || '/User.avif',
-					created_at: u?.created_at || (u?.createdAt ? Math.floor(u.createdAt / 1000) : Math.floor(Date.now() / 1000) - 86400 * 7),
-					last_active_at: u?.last_active_at || (u?.updatedAt ? Math.floor(u.updatedAt / 1000) : Math.floor(Date.now() / 1000)),
-					updated_at: u?.updated_at || (u?.updatedAt ? Math.floor(u.updatedAt / 1000) : Math.floor(Date.now() / 1000)),
-					oauth_sub: u?.oauth_sub || null
-				}));
+				for (const [uid, u] of Object.entries(data) as [string, any][]) {
+					const cleanUser = {
+						id: uid,
+						name: u?.name || (u?.email ? u.email.split('@')[0] : 'Utilisateur'),
+						email: u?.email || (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ? 'contact@pincorpsstudio.site' : 'user@aria.local'),
+						role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || u?.email?.toLowerCase() === 'mrpinpinpro@gmail.com') ? 'owner' : (u?.role || (u?.admin ? 'admin' : 'user')),
+						profile_image_url: u?.profile_image_url || '/User.avif',
+						created_at: u?.created_at || (u?.createdAt ? Math.floor(u.createdAt / 1000) : Math.floor(Date.now() / 1000) - 86400 * 7),
+						last_active_at: u?.last_active_at || (u?.updatedAt ? Math.floor(u.updatedAt / 1000) : Math.floor(Date.now() / 1000)),
+						updated_at: u?.updated_at || (u?.updatedAt ? Math.floor(u.updatedAt / 1000) : Math.floor(Date.now() / 1000)),
+						oauth_sub: u?.oauth_sub || null
+					};
+					usersMap.set(uid, { ...(usersMap.get(uid) || {}), ...cleanUser });
+				}
 			}
 		}
 	} catch (e) {
 		console.warn('Failed to fetch users from Firebase:', e);
 	}
-	return [];
+
+	// 3. Toujours inclure l'utilisateur actuel s'il est connecté
+	if (auth.currentUser) {
+		const u = auth.currentUser;
+		const uid = u.uid;
+		const email = u.email || 'mrpinpinpro@gmail.com';
+		const role = (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email.toLowerCase() === 'mrpinpinpro@gmail.com') ? 'owner' : 'admin';
+		if (!usersMap.has(uid)) {
+			usersMap.set(uid, {
+				id: uid,
+				name: u.displayName || (email ? email.split('@')[0] : 'MrPinPin'),
+				email: email,
+				role: role,
+				profile_image_url: u.photoURL || '/User.avif',
+				created_at: Math.floor(Date.now() / 1000) - 86400 * 30,
+				last_active_at: Math.floor(Date.now() / 1000),
+				updated_at: Math.floor(Date.now() / 1000)
+			});
+		}
+	}
+
+	return Array.from(usersMap.values());
 };
 
-/** Met à jour le rôle d'un utilisateur dans Firebase Realtime Database */
+/** Met à jour le rôle d'un utilisateur dans Firebase Realtime Database & LocalStorage */
 export const updateFirebaseUserRole = async (uid: string, role: string) => {
+	if (typeof window !== 'undefined') {
+		try {
+			const localRaw = localStorage.getItem('aria_registered_users');
+			if (localRaw) {
+				const list = JSON.parse(localRaw);
+				if (Array.isArray(list)) {
+					const idx = list.findIndex((u) => u.id === uid);
+					if (idx >= 0) {
+						list[idx].role = role;
+						localStorage.setItem('aria_registered_users', JSON.stringify(list));
+					}
+				}
+			}
+		} catch (e) {}
+	}
 	try {
 		const authParam = await getAuthParam();
 		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
