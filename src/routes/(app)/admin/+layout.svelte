@@ -21,7 +21,7 @@
 		$user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ||
 		$user?.email === 'mrpinpinpro@gmail.com';
 
-	$: if (loaded && $user && !isStaff) {
+	$: if (loaded && $user?.role && !isStaff) {
 		toast.error($i18n.t('Accès refusé : Réservé aux administrateurs.'));
 		goto('/', { replaceState: true });
 	}

@@ -2725,15 +2725,15 @@
 		if (choices && !output) {
 			if (choices[0]?.message?.content) {
 				// Non-stream response
-				message.content += choices[0]?.message?.content;
+				message.content = (message.content ?? '') + (choices[0]?.message?.content ?? '');
 				dispatchCallOverlayAudio(message);
 			} else {
 				// Stream response
 				let value = choices[0]?.delta?.content ?? '';
-				if (message.content == '' && value == '\n') {
+				if ((message.content ?? '') === '' && value === '\n') {
 					console.log('Empty response');
 				} else {
-					message.content += value;
+					message.content = (message.content ?? '') + value;
 
 					if (navigator.vibrate && ($settings?.hapticFeedback ?? false)) {
 						navigator.vibrate(5);
@@ -3729,13 +3729,17 @@
 	};
 
 	const sanitizeErrorMessage = (err: any): string => {
-		if (!err) return 'Une erreur est survenue lors de la génération. Veuillez réessayer.';
+		const _generic = 'Une erreur est survenue lors de la génération. Veuillez réessayer.';
+		if (!err) return _generic;
 		const str = typeof err === 'string' ? err : (err.message || err.detail || JSON.stringify(err));
 		const lower = str.toLowerCase();
-		if (lower.includes('quota') || lower.includes('token') || lower.includes('limit') || lower.includes('429')) {
-			return '⚠️ Quota de tokens atteint. Attendez la réinitialisation ou passez Bêta-Testeur.';
+		if (lower.includes('quota') || lower.includes('rate limit') || lower.includes('429') || lower.includes('aria_error')) {
+			return '⚠️ Le service IA est temporairement indisponible. Réessayez dans un instant.';
 		}
-		return 'Une erreur est survenue lors de la génération. Veuillez réessayer.';
+		if (lower.includes('token') && lower.includes('limit')) {
+			return '⚠️ Le service IA est temporairement indisponible. Réessayez dans un instant.';
+		}
+		return _generic;
 	};
 
 	const handleOpenAIError = async (error, responseMessage) => {
@@ -3940,10 +3944,10 @@
 						break;
 					}
 
-					if (mergedResponse.content == '' && value == '\n') {
+					if ((mergedResponse.content ?? '') === '' && value === '\n') {
 						continue;
 					} else {
-						mergedResponse.content += value;
+						mergedResponse.content = (mergedResponse.content ?? '') + value;
 						history.messages[messageId] = message;
 					}
 

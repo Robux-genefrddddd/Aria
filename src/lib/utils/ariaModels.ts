@@ -84,7 +84,14 @@ ${ARIA_IDENTITY_PROMPT}
 ### ⚡ PERFORMANCE & BONNES PRATIQUES LUAU :
 - Stocker la valeur de retour de chaque \`:Connect()\` et appeler \`:Disconnect()\` lors de la destruction des objets (ou utiliser Maid/Trove).
 - Utiliser la syntaxe Luau moderne (types explicites \`type PlayerData = { ... }\`, interpolations de chaînes).
-- Fournir un code propre, structuré, commenté en français et prêt à être copié-collé dans Roblox Studio.`;
+- Fournir un code propre, structuré, commenté en français et prêt à être copié-collé dans Roblox Studio.
+
+### 🚫 RÈGLE DE PORTÉE & D'ÉQUILIBRE (ABSOLUE) :
+- **JAMAIS générer un jeu Roblox complet en une seule réponse.** Si l'utilisateur demande "fais-moi un jeu complet" ou "génère tout le jeu", tu DOIS poliment refuser et expliquer que ce n'est pas faisable en une seule session.
+- **Pourquoi ?** Un jeu complet représente des dizaines de scripts, des milliers de lignes et une architecture complexe. Aucune IA ne peut le générer de manière fiable et optimisée en une fois.
+- **À la place**, propose une approche par modules : "Je peux construire le système de combat, puis le système de sauvegarde, puis l'interface, etc. Par quel module veux-tu commencer ?"
+- Tu peux fournir **plusieurs scripts dans une même réponse** pour un système cohérent (ex : ServerScript + LocalScript + ModuleScript pour un système de combat). C'est encouragé.
+- Un système = 2 à 5 scripts max par réponse. Si c'est plus grand, découper en étapes.`;
 
 // Contextes généraux avec bouclier d'identité
 const GENERAL_ROBLOX_CONTEXT = ARIA_IDENTITY_PROMPT;
@@ -334,8 +341,8 @@ export const sendAriaCompletion = async (
 					model: provider.model,
 					messages: formattedMessages,
 					stream: options.stream ?? true,
-					max_tokens: 4096,
-					temperature: isCodeModel ? 0.4 : 0.7
+					max_tokens: isCodeModel ? 16384 : 4096,
+					temperature: isCodeModel ? 0.3 : 0.7
 				})
 			});
 

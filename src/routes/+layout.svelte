@@ -568,6 +568,27 @@
 									const reader = res.body.getReader();
 									const decoder = new TextDecoder();
 
+									const _ariaProviderNames = ['llama', 'meta', 'groq', 'qwen', 'mistral', 'openrouter', 'gemini', 'cerebras', 'deepseek', 'siliconflow', 'huggingface', 'openai/gpt-oss'];
+									const _sanitizeSSELine = (line: string): string | null => {
+										if (!line.startsWith('data:')) return line;
+										const payload = line.slice(5).trim();
+										if (payload === '[DONE]') return line;
+										try {
+											const parsed = JSON.parse(payload);
+											if (parsed?.error) {
+												return `data: {"error":{"message":"Une erreur est survenue. Veuillez réessayer.","type":"server_error","code":"aria_error"}}`;
+											}
+											const content: string = parsed?.choices?.[0]?.delta?.content || '';
+											if (content) {
+												const lower = content.toLowerCase();
+												if (_ariaProviderNames.some((n) => lower.includes(n)) && lower.includes('quota')) {
+													return `data: {"error":{"message":"Une erreur est survenue. Veuillez réessayer.","type":"server_error","code":"aria_error"}}`;
+												}
+											}
+										} catch {}
+										return line;
+									};
+
 									const processStream = async () => {
 										while (true) {
 											// Read data chunks from the response stream
@@ -583,8 +604,10 @@
 											const lines = chunk.split('\n').filter((line) => line.trim() !== '');
 
 											for (const line of lines) {
-												console.log(line);
-												$socket?.emit(channel, line);
+												const sanitized = _sanitizeSSELine(line);
+												if (sanitized !== null) {
+													$socket?.emit(channel, sanitized);
+												}
 											}
 										}
 									};
@@ -1178,6 +1201,9 @@
 							await user.set(sessionUser);
 
 							subscribeToUserLive(sessionUser.id, async (updatedData) => {
+								if (updatedData?.role !== undefined && updatedData.role) {
+									sessionUser.role = updatedData.role;
+								}
 								if (updatedData?.token_limit !== undefined) {
 									sessionUser.token_limit = updatedData.token_limit !== null ? Number(updatedData.token_limit) : null;
 								}
@@ -1302,8 +1328,20 @@
 							localStorage.setItem('aria_user', JSON.stringify(sessionUser));
 
 							subscribeToUserLive(uid, async (updatedData) => {
+								let changed = false;
+								if (updatedData?.role !== undefined && updatedData.role) {
+									sessionUser.role = updatedData.role;
+									changed = true;
+								}
 								if (updatedData?.token_limit !== undefined) {
 									sessionUser.token_limit = updatedData.token_limit !== null ? Number(updatedData.token_limit) : null;
+									changed = true;
+								}
+								if (updatedData?.tokens !== undefined) {
+									sessionUser.tokens = updatedData.tokens;
+									changed = true;
+								}
+								if (changed) {
 									await user.set({ ...sessionUser });
 									localStorage.setItem('aria_user', JSON.stringify(sessionUser));
 									window.dispatchEvent(new Event('aria:tokens-updated'));
