@@ -1549,6 +1549,7 @@
 		loading = true;
 		window.addEventListener('message', onMessageHandler);
 		window.addEventListener('init-new-chat', initNewChat);
+		window.addEventListener('aria:anti-conso-stop', () => { if (generating) stopResponse(false); });
 		$socket?.on('events', chatEventHandler);
 		$socket?.on('connect', handleSocketConnect);
 
@@ -1640,6 +1641,7 @@
 				chatId.set('');
 				chatTitle.set('');
 
+				window.removeEventListener('aria:anti-conso-stop', () => {});
 				window.removeEventListener('message', onMessageHandler);
 				$socket?.off('events', chatEventHandler);
 				$socket?.off('connect', handleSocketConnect);

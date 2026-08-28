@@ -1682,6 +1682,23 @@
 						class=" sidebar-bg-gradient-to-t bg-linear-to-t from-gray-50 dark:from-gray-950 to-transparent from-50% pointer-events-none absolute inset-0 -z-10 -mt-6"
 					></div>
 					<div class="flex flex-col w-full">
+						<!-- Mode anti-conso : arrête la génération si l'onglet est fermé/masqué -->
+						<button
+							type="button"
+							class="flex items-center gap-2 w-full px-2 py-1 mb-1 rounded-lg text-xs transition hover:bg-gray-100 dark:hover:bg-gray-850 {($settings?.ariaAntiConso ?? true) ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}"
+							title="Mode anti-consommation : arrête la génération si vous quittez l'onglet"
+							on:click={() => {
+								settings.set({ ...$settings, ariaAntiConso: !($settings?.ariaAntiConso ?? true) });
+							}}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+							</svg>
+							<span class="truncate">Mode anti-conso</span>
+							<div class="ml-auto flex-shrink-0 w-7 h-4 rounded-full relative transition-colors {($settings?.ariaAntiConso ?? true) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}">
+								<div class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform {($settings?.ariaAntiConso ?? true) ? 'translate-x-3' : 'translate-x-0'}"></div>
+							</div>
+						</button>
 						<TokenUsageMeter className="mb-2 px-1 w-full" />
 						{#if $user !== undefined && $user !== null}
 							<UserMenu
