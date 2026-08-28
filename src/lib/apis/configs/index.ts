@@ -777,6 +777,7 @@ export const getBanners = async (token: string): Promise<Banner[]> => {
 		const { getAuthParam } = await import('$lib/firebase');
 		const authParam = await getAuthParam();
 		const res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/banners.json${authParam}`);
+		if (res.status === 401) return [];
 		if (res.ok) {
 			const data = await res.json();
 			if (Array.isArray(data)) return data;

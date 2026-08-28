@@ -23,10 +23,12 @@ export const loadToolByUrl = async (token: string = '', url: string) => {
 
 export const getTools = async (token: string = '', query: string | null = null) => {
 	try {
+		const { getAuthParam } = await import('$lib/firebase');
 		const authParam = await getAuthParam();
 		const res = await fetch(
 			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools.json${authParam}`
 		);
+		if (res.status === 401) return [];
 		if (res.ok) {
 			const data = await res.json();
 			if (data && typeof data === 'object') {

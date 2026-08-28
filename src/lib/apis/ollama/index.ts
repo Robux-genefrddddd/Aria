@@ -136,71 +136,41 @@ export const getOllamaUrls = async (token: string = '') => {
 };
 
 export const getOllamaVersion = async (token: string, urlIdx?: number) => {
-	let error = null;
-
-	const res = await fetch(`${OLLAMA_API_BASE_URL}/api/version${urlIdx ? `/${urlIdx}` : ''}`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			...(token && { authorization: `Bearer ${token}` })
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			console.error(err);
-			if ('detail' in err) {
-				error = err.detail;
-			} else {
-				error = 'Server connection failed';
+	try {
+		const res = await fetch(`${OLLAMA_API_BASE_URL}/api/version${urlIdx ? `/${urlIdx}` : ''}`, {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+				...(token && { authorization: `Bearer ${token}` })
 			}
-			return null;
 		});
-
-	if (error) {
-		throw error;
+		if (!res.ok) return false;
+		const data = await res.json();
+		return data?.version ?? false;
+	} catch (e) {
+		return false;
 	}
-
-	return res?.version ?? false;
 };
 
 export const getOllamaModels = async (token: string = '', urlIdx: null | number = null) => {
-	let error = null;
-
-	const res = await fetch(`${OLLAMA_API_BASE_URL}/api/tags${urlIdx !== null ? `/${urlIdx}` : ''}`, {
-		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			...(token && { authorization: `Bearer ${token}` })
-		}
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			console.error(err);
-			if ('detail' in err) {
-				error = err.detail;
-			} else {
-				error = 'Server connection failed';
+	try {
+		const res = await fetch(`${OLLAMA_API_BASE_URL}/api/tags${urlIdx !== null ? `/${urlIdx}` : ''}`, {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+				...(token && { authorization: `Bearer ${token}` })
 			}
-			return null;
 		});
-
-	if (error) {
-		throw error;
+		if (!res.ok) return [];
+		const data = await res.json();
+		return (data?.models ?? [])
+			.map((model: any) => ({ id: model.model, name: model.name ?? model.model, ...model }))
+			.sort((a: any, b: any) => (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''));
+	} catch (e) {
+		return [];
 	}
-
-	return (res?.models ?? [])
-		.map((model) => ({ id: model.model, name: model.name ?? model.model, ...model }))
-		.sort((a, b) => {
-			return (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? '');
-		});
 };
 
 export const generatePrompt = async (token: string = '', model: string, conversation: string) => {

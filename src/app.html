@@ -43,6 +43,14 @@
 			function resizeIframe(obj) {
 				obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
 			}
+			window.addEventListener('unhandledrejection', function (event) {
+				if (event.reason === undefined || event.reason === null) {
+					console.warn('[Aria Diagnostic] Intercepted undefined Promise rejection:', event);
+					event.preventDefault();
+				} else {
+					console.warn('[Aria Diagnostic] Promise error:', event.reason);
+				}
+			});
 		</script>
 
 		<script>
