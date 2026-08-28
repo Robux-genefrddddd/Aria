@@ -69,8 +69,11 @@
 		}
 	};
 
+	import { executeRecaptcha } from '$lib/utils/recaptcha';
+
 	const signInHandler = async () => {
 		try {
+			await executeRecaptcha('LOGIN');
 			const userCredential = await firebaseSignIn(email, password);
 			const sessionUser = await createAriaSessionFromFirebaseUser(userCredential.user);
 			await setSessionUser(sessionUser);
