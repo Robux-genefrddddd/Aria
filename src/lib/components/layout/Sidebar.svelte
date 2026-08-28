@@ -1135,9 +1135,9 @@
 
 
 					<a href="/" class="flex flex-1 px-0.5" on:click={newChatHandler}>
-						<!-- LICENSE covers this Open WebUI sidebar name.
+						<!-- LICENSE covers this Aria UI sidebar name.
 					Do not alter, remove, obscure, or replace it except as LICENSE permits:
-					https://docs.openwebui.com/license. -->
+					https://docs.Aria.com/license. -->
 						<div
 							id="sidebar-webui-name"
 							class=" self-center font-normal text-gray-700 dark:text-gray-200"

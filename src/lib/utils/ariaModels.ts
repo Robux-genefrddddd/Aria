@@ -93,13 +93,13 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 	'aria-basic': {
 		id: 'aria-basic',
 		name: 'Aria Basic',
-		description: 'Modèle rapide et réactif pour un usage quotidien (Groq / OpenRouter - 100% Gratuit).',
+		description: 'Modèle rapide et réactif pour un usage quotidien.',
 		owned_by: 'aria',
 		info: {
 			meta: {
 				beta: false,
 				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
-				description: 'Modèle rapide et réactif pour un usage quotidien (Groq / OpenRouter - 100% Gratuit).',
+				description: 'Modèle rapide et réactif pour un usage quotidien.',
 				systemPrompt: `Tu es Aria Basic, un assistant IA simple, rapide et concis. Réponds clairement sans détails excessivement complexes.\n${GENERAL_ROBLOX_CONTEXT}`
 			}
 		},
@@ -134,14 +134,14 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 	'aria-reflection': {
 		id: 'aria-reflection',
 		name: 'Aria Réflexion',
-		description: 'Modèle de réflexion approfondie, raisonnement logique et analyse complexe (Groq / OpenRouter - 100% Gratuit).',
+		description: 'Modèle de réflexion approfondie, raisonnement logique et analyse complexe.',
 		owned_by: 'aria',
 		provider: 'groq',
 		info: {
 			meta: {
 				beta: false,
 				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
-				description: 'Modèle de réflexion approfondie, raisonnement logique et analyse complexe (Groq / OpenRouter - 100% Gratuit).',
+				description: 'Modèle de réflexion approfondie, raisonnement logique et analyse complexe.',
 				systemPrompt: `Tu es Aria Réflexion, une IA hautement analytique et logique. Décompose chaque problème complexe étape par étape avec un raisonnement structuré, rigoureux et approfondi.\n${GENERAL_ROBLOX_CONTEXT}`
 			}
 		},
@@ -176,13 +176,13 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 	'aria-plus': {
 		id: 'aria-plus',
 		name: 'Aria Plus',
-		description: 'IA autonome ultra-intelligente avec création de compétences (Bêta-Testeurs/Admins/Owner - 100% Gratuit).',
+		description: 'IA autonome ultra-intelligente avec création de compétences.',
 		owned_by: 'aria',
 		info: {
 			meta: {
 				beta: true,
 				accessRoles: ['beta_tester', 'admin', 'owner'],
-				description: 'IA autonome ultra-intelligente avec création de compétences (Bêta-Testeurs/Admins/Owner - 100% Gratuit).',
+				description: 'IA autonome ultra-intelligente avec création de compétences.',
 				systemPrompt: `Tu es Aria Plus, une IA hautement autonome et supérieurement intelligente. Tu disposes de capacités d'analyse avancées, de résolution de problèmes complexes et de création autonome de compétences adaptatives.\n${GENERAL_ROBLOX_CONTEXT}`
 			}
 		},
@@ -217,13 +217,13 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 	'aria-code': {
 		id: 'aria-code',
 		name: 'Aria Code',
-		description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio (Bêta/Admins/Owner - 100% Gratuit).',
+		description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio.',
 		owned_by: 'aria',
 		info: {
 			meta: {
 				beta: true,
 				accessRoles: ['beta_tester', 'admin', 'owner'],
-				description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio (Bêta/Admins/Owner - 100% Gratuit).',
+				description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio.',
 				systemPrompt: ROBLOX_LUAU_SYSTEM_PROMPT
 			}
 		},

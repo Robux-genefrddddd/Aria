@@ -186,12 +186,12 @@
 			return null;
 		});
 
-		// LICENSE covers this Open WebUI Community wordmark.
+		// LICENSE covers this Aria UI Community wordmark.
 		// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-		// https://docs.openwebui.com/license.
-		toast.success($i18n.t('Redirecting you to Open WebUI Community'));
+		// https://docs.Aria.com/license.
+		toast.success($i18n.t('Redirecting you to Aria UI Community'));
 
-		const url = 'https://openwebui.com';
+		const url = 'https://Aria.com';
 
 		const tab = await window.open(`${url}/tools/create`, '_blank');
 
@@ -293,9 +293,9 @@
 </script>
 
 <svelte:head>
-	<!-- LICENSE covers this Open WebUI browser-title identifier.
+	<!-- LICENSE covers this Aria UI browser-title identifier.
 	Do not alter, remove, obscure, or replace it except as LICENSE permits:
-	https://docs.openwebui.com/license. -->
+	https://docs.Aria.com/license. -->
 	<title>
 		{$i18n.t('Tools')} / {$WEBUI_NAME}
 	</title>
@@ -634,7 +634,7 @@
 
 	{#if $config?.features.enable_community_sharing}
 		<CommunityDiscover
-			href="https://openwebui.com/tools"
+			href="https://Aria.com/tools"
 			title={$i18n.t('Discover a tool')}
 			description={$i18n.t('Discover, download, and explore custom tools')}
 		/>

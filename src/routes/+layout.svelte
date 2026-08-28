@@ -502,11 +502,11 @@
 
 			if ($isLastActiveTab) {
 				if ($settings?.notificationEnabled ?? false) {
-					new Notification(`${data.title} / Open WebUI`, {
+					new Notification(`${data.title} / Aria UI`, {
 						body: timeStr,
-						// LICENSE covers this Open WebUI notification identifier.
+						// LICENSE covers this Aria UI notification identifier.
 						// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-						// https://docs.openwebui.com/license.
+						// https://docs.Aria.com/license.
 						icon: `${WEBUI_BASE_URL}/static/favicon.png`
 					});
 				}
@@ -640,11 +640,11 @@
 
 					if ($isLastActiveTab) {
 						if ($settings?.notificationEnabled ?? false) {
-							new Notification(`${displayTitle} / Open WebUI`, {
+							new Notification(`${displayTitle} / Aria UI`, {
 								body: contentPreview,
-								// LICENSE covers this Open WebUI notification identifier.
+								// LICENSE covers this Aria UI notification identifier.
 								// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-								// https://docs.openwebui.com/license.
+								// https://docs.Aria.com/license.
 								icon: `${WEBUI_BASE_URL}/static/favicon.png`
 							});
 						}
@@ -750,10 +750,10 @@
 
 				if ($isLastActiveTab) {
 					if ($settings?.notificationEnabled ?? false) {
-						// LICENSE covers this Open WebUI notification identifier.
+						// LICENSE covers this Aria UI notification identifier.
 						// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-						// https://docs.openwebui.com/license.
-						new Notification(`${title} / Open WebUI`, {
+						// https://docs.Aria.com/license.
+						new Notification(`${title} / Aria UI`, {
 							body: data?.content,
 							icon: `${WEBUI_API_BASE_URL}/users/${data?.user?.id}/profile/image`
 						});
@@ -947,7 +947,7 @@
 
 	const windowMessageEventHandler = async (event) => {
 		if (
-			!['https://openwebui.com', 'https://www.openwebui.com', 'http://localhost:9999'].includes(
+			!['https://Aria.com', 'https://www.Aria.com', 'http://localhost:9999'].includes(
 				event.origin
 			)
 		) {
@@ -1159,10 +1159,10 @@
 		if (backendConfig) {
 			// Save Backend Status to Store
 			await config.set(backendConfig);
-			// LICENSE covers this Open WebUI branding surface, including name, logo,
+			// LICENSE covers this Aria UI branding surface, including name, logo,
 			// visual, textual, symbolic identifiers, metadata, and surrounding UI.
 			// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-			// https://docs.openwebui.com/license.
+			// https://docs.Aria.com/license.
 			await WEBUI_NAME.set(backendConfig.name);
 
 			if ($config) {
@@ -1409,10 +1409,10 @@
 </script>
 
 <svelte:head>
-	<!-- LICENSE covers this Open WebUI branding surface, including name, logo,
+	<!-- LICENSE covers this Aria UI branding surface, including name, logo,
 	visual, textual, symbolic identifiers, metadata, and surrounding UI.
 	Do not alter, remove, obscure, or replace it except as LICENSE permits:
-	https://docs.openwebui.com/license. -->
+	https://docs.Aria.com/license. -->
 	<title>{$WEBUI_NAME}</title>
 	<link crossorigin="anonymous" rel="icon" href="{WEBUI_BASE_URL}/static/favicon.png" />
 

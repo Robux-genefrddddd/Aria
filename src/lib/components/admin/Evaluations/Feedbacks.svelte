@@ -125,10 +125,10 @@
 	};
 
 	const shareHandler = async () => {
-		// LICENSE covers this Open WebUI Community wordmark.
+		// LICENSE covers this Aria UI Community wordmark.
 		// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-		// https://docs.openwebui.com/license.
-		toast.success($i18n.t('Redirecting you to Open WebUI Community'));
+		// https://docs.Aria.com/license.
+		toast.success($i18n.t('Redirecting you to Aria UI Community'));
 
 		// remove snapshot from feedbacks
 		const feedbacksToShare = feedbacks.map((f) => {
@@ -137,7 +137,7 @@
 		});
 		console.log(feedbacksToShare);
 
-		const url = 'https://openwebui.com';
+		const url = 'https://Aria.com';
 		const tab = await window.open(`${url}/leaderboard`, '_blank');
 
 		// Define the event handler function

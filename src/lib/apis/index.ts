@@ -1453,7 +1453,7 @@ export const getUsage = async (token: string = '') => {
 
 export const DEFAULT_BACKEND_CONFIG = {
 	status: true,
-	name: 'Open WebUI',
+	name: 'Aria UI',
 	version: '0.11.1',
 	default_locale: 'fr-FR',
 	default_models: '',

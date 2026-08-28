@@ -195,12 +195,12 @@
 	};
 
 	const shareHandler = async (prompt) => {
-		// LICENSE covers this Open WebUI Community wordmark.
+		// LICENSE covers this Aria UI Community wordmark.
 		// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-		// https://docs.openwebui.com/license.
-		toast.success($i18n.t('Redirecting you to Open WebUI Community'));
+		// https://docs.Aria.com/license.
+		toast.success($i18n.t('Redirecting you to Aria UI Community'));
 
-		const url = 'https://openwebui.com';
+		const url = 'https://Aria.com';
 
 		const tab = await window.open(`${url}/prompts/create`, '_blank');
 		window.addEventListener(
@@ -302,7 +302,7 @@
 
 		const onMessage = async (event: MessageEvent) => {
 			if (
-				!['https://openwebui.com', 'https://www.openwebui.com', 'http://localhost:9999'].includes(
+				!['https://Aria.com', 'https://www.Aria.com', 'http://localhost:9999'].includes(
 					event.origin
 				)
 			) {
@@ -361,9 +361,9 @@
 </script>
 
 <svelte:head>
-	<!-- LICENSE covers this Open WebUI browser-title identifier.
+	<!-- LICENSE covers this Aria UI browser-title identifier.
 	Do not alter, remove, obscure, or replace it except as LICENSE permits:
-	https://docs.openwebui.com/license. -->
+	https://docs.Aria.com/license. -->
 	<title>
 		{$i18n.t('Prompts')} / {$WEBUI_NAME}
 	</title>
@@ -753,7 +753,7 @@
 
 	{#if $config?.features.enable_community_sharing}
 		<CommunityDiscover
-			href="https://openwebui.com/prompts"
+			href="https://Aria.com/prompts"
 			title={$i18n.t('Discover a prompt')}
 			description={$i18n.t('Discover, download, and explore custom prompts')}
 		/>

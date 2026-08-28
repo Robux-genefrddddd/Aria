@@ -33,9 +33,9 @@
 				...modelInfo,
 				meta: {
 					...modelInfo.meta,
-					// LICENSE covers this Open WebUI fallback logo.
+					// LICENSE covers this Aria UI fallback logo.
 					// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-					// https://docs.openwebui.com/license.
+					// https://docs.Aria.com/license.
 					profile_image_url:
 						modelInfo.meta.profile_image_url ?? `${WEBUI_BASE_URL}/static/favicon.png`,
 					suggestion_prompts: modelInfo.meta.suggestion_prompts
@@ -66,7 +66,7 @@
 	onMount(() => {
 		const handleMessageEvent = async (event: MessageEvent) => {
 			if (
-				!['https://openwebui.com', 'https://www.openwebui.com', 'http://localhost:9999'].includes(
+				!['https://Aria.com', 'https://www.Aria.com', 'http://localhost:9999'].includes(
 					event.origin
 				)
 			) {

@@ -1,8 +1,8 @@
 import { WEBUI_BASE_URL } from '$lib/constants';
 
-// LICENSE covers this Open WebUI fallback logo.
+// LICENSE covers this Aria UI fallback logo.
 // Do not alter, remove, obscure, or replace it except as LICENSE permits:
-// https://docs.openwebui.com/license.
+// https://docs.Aria.com/license.
 const PLACEHOLDER_IMAGE = '/favicon.png';
 
 /**

@@ -206,7 +206,7 @@
 								bind:value={adminConfig.API_KEYS_ALLOWED_ENDPOINTS}
 							/>
 							<a
-								href="https://docs.openwebui.com/reference/api-endpoints"
+								href="https://docs.Aria.com/reference/api-endpoints"
 								target="_blank"
 								class="mt-1 block text-[0.6875rem] text-gray-400 underline hover:text-gray-700 dark:text-gray-600 dark:hover:text-gray-300"
 							>
@@ -231,7 +231,7 @@
 
 					{#if adminConfig.JWT_EXPIRES_IN === '-1'}
 						<a
-							href="https://docs.openwebui.com/reference/env-configuration#jwt_expires_in"
+							href="https://docs.Aria.com/reference/env-configuration#jwt_expires_in"
 							target="_blank"
 							class="mt-1 block rounded-lg bg-yellow-500/10 px-2 py-1.5 text-[0.6875rem] text-yellow-700 underline dark:text-yellow-200"
 						>
@@ -489,12 +489,12 @@
 					</AdminSettingField>
 				{/if}
 
-				<!-- LICENSE covers this Open WebUI wordmark.
+				<!-- LICENSE covers this Aria UI wordmark.
 					Do not alter, remove, obscure, or replace it except as LICENSE permits:
-					https://docs.openwebui.com/license. -->
+					https://docs.Aria.com/license. -->
 				<AdminSettingRow
 					label={$i18n.t('Group Mapping')}
-					description={$i18n.t('Map LDAP groups to Open WebUI groups.')}
+					description={$i18n.t('Map LDAP groups to Aria UI groups.')}
 					let:labelId
 				>
 					<Switch bind:state={LDAP_SERVER.enable_group_management} ariaLabelledbyId={labelId} />
@@ -712,12 +712,12 @@
 							/>
 						</AdminSettingField>
 
-						<!-- LICENSE covers this Open WebUI wordmark.
+						<!-- LICENSE covers this Aria UI wordmark.
 						Do not alter, remove, obscure, or replace it except as LICENSE permits:
-						https://docs.openwebui.com/license. -->
+						https://docs.Aria.com/license. -->
 						<AdminSettingRow
 							label={$i18n.t('Role Mapping')}
-							description={$i18n.t('Map OAuth claims to Open WebUI roles.')}
+							description={$i18n.t('Map OAuth claims to Aria UI roles.')}
 							let:labelId
 						>
 							<Switch
@@ -763,12 +763,12 @@
 							</AdminSettingField>
 						{/if}
 
-						<!-- LICENSE covers this Open WebUI wordmark.
+						<!-- LICENSE covers this Aria UI wordmark.
 						Do not alter, remove, obscure, or replace it except as LICENSE permits:
-						https://docs.openwebui.com/license. -->
+						https://docs.Aria.com/license. -->
 						<AdminSettingRow
 							label={$i18n.t('Group Mapping')}
-							description={$i18n.t('Map OAuth claims to Open WebUI groups.')}
+							description={$i18n.t('Map OAuth claims to Aria UI groups.')}
 							let:labelId
 						>
 							<Switch

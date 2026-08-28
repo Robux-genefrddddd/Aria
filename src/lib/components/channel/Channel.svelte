@@ -301,9 +301,9 @@
 </script>
 
 <svelte:head>
-	<!-- LICENSE covers this Open WebUI browser-title identifier.
+	<!-- LICENSE covers this Aria UI browser-title identifier.
 	Do not alter, remove, obscure, or replace it except as LICENSE permits:
-	https://docs.openwebui.com/license. -->
+	https://docs.Aria.com/license. -->
 	{#if channel?.type === 'dm'}
 		<title
 			>{channel?.name.trim() ||
@@ -317,10 +317,10 @@
 					} else {
 						return e.name;
 					}
-				}, '')} / Open WebUI</title
+				}, '')} / Aria UI</title
 		>
 	{:else}
-		<title>#{channel?.name ?? 'Channel'} / Open WebUI</title>
+		<title>#{channel?.name ?? 'Channel'} / Aria UI</title>
 	{/if}
 </svelte:head>
 

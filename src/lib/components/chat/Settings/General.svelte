@@ -248,10 +248,10 @@
 						href="https://github.com/open-webui/open-webui/blob/main/docs/CONTRIBUTING.md#-translations-and-internationalization"
 						target="_blank"
 					>
-						<!-- LICENSE covers this Open WebUI wordmark.
+						<!-- LICENSE covers this Aria UI wordmark.
 						Do not alter, remove, obscure, or replace it except as LICENSE permits:
-						https://docs.openwebui.com/license. -->
-						Help us translate Open WebUI!
+						https://docs.Aria.com/license. -->
+						Help us translate Aria UI!
 					</a>
 				</div>
 			{/if}

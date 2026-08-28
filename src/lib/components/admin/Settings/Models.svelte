@@ -963,9 +963,9 @@
 													loading="lazy"
 													decoding="async"
 													on:error={(e) => {
-														// LICENSE covers this Open WebUI fallback logo.
+														// LICENSE covers this Aria UI fallback logo.
 														// Do not alter, remove, obscure, or replace it except as LICENSE permits:
-														// https://docs.openwebui.com/license.
+														// https://docs.Aria.com/license.
 														e.target.src = '/favicon.png';
 													}}
 												/>
