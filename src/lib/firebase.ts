@@ -119,23 +119,6 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 			}
 		}
 
-		// 5. Recherche par email si l'UID diffère dans Firebase
-		if (firebaseUser.email) {
-			const allUsersUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json${authParam}`;
-			const allRes = await fetch(allUsersUrl);
-			if (allRes.ok) {
-				const allUsers = await allRes.json();
-				if (allUsers && typeof allUsers === 'object') {
-					for (const key of Object.keys(allUsers)) {
-						const u = allUsers[key];
-						if (u?.email?.toLowerCase() === firebaseUser.email.toLowerCase()) {
-							if (u.role) return u.role;
-							if (u.isAdmin || u.admin) return 'admin';
-						}
-					}
-				}
-			}
-		}
 	} catch (e) {
 		console.warn('Could not fetch role from Firebase:', e);
 	}
@@ -501,13 +484,16 @@ export const updateFirebaseUser = async (uid: string, updates: Record<string, an
 export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) => {
 	if (typeof window === 'undefined' || !uid) return () => {};
 
+	// Always use the authenticated user's UID to avoid 401 on foreign paths
+	const effectiveUid = auth.currentUser?.uid || uid;
+
 	let es: EventSource | null = null;
 	let interval: any = null;
 
 	const connect = async () => {
 		try {
 			const authParam = await getAuthParam();
-			const url = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
+			const url = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${effectiveUid}.json${authParam}`;
 			es = new EventSource(url);
 
 			es.addEventListener('put', (event: any) => {
@@ -550,7 +536,7 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 		try {
 			const authParam = await getAuthParam();
 			const res = await fetch(
-				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${effectiveUid}.json${authParam}`
 			);
 			if (res.ok) {
 				const data = await res.json();
@@ -609,10 +595,10 @@ export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCo
 };
 
 const getResolvedUid = (uid?: string): string => {
-	if (uid && uid !== 'anonymous' && uid !== 'undefined') return uid;
 	if (auth.currentUser?.uid) return auth.currentUser.uid;
+	if (uid && uid !== 'anonymous' && uid !== 'undefined' && uid !== 'QH8wKG8nWZVtUQEy2pppuBuNZgC3') return uid;
 	if (typeof window !== 'undefined') {
-		const storedUid = localStorage.getItem('aria_uid');
+		const storedUid = localStorage.getItem('aria_uid') || localStorage.getItem('user_id');
 		if (storedUid) return storedUid;
 		const userRaw = localStorage.getItem('aria_user');
 		if (userRaw && userRaw.trim() !== '') {
@@ -622,7 +608,7 @@ const getResolvedUid = (uid?: string): string => {
 			} catch {}
 		}
 	}
-	return 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
+	return '';
 };
 
 /** Enregistre la liste des conversations de l'utilisateur dans Firebase Realtime Database */

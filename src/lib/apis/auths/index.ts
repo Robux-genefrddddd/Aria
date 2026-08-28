@@ -109,9 +109,10 @@ export const getSessionUser = async (token: string) => {
 	try {
 		const { auth, getUserRoleFromFirebase, getAuthParam } = await import('$lib/firebase');
 		const currentUser = auth.currentUser;
-		const uid = currentUser?.uid || localStorage.getItem('user_id') || localStorage.getItem('aria_uid') || 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
-		const email = currentUser?.email || localStorage.getItem('user_email') || 'mrpinpinpro@gmail.com';
-		const name = currentUser?.displayName || localStorage.getItem('user_name') || 'Utilisateur Aria';
+		const uid = currentUser?.uid || localStorage.getItem('user_id') || localStorage.getItem('aria_uid') || '';
+		if (!uid) return DEFAULT_SESSION_USER;
+		const email = currentUser?.email || localStorage.getItem('user_email') || '';
+		const name = currentUser?.displayName || localStorage.getItem('user_name') || 'Utilisateur';
 
 		const role = await getUserRoleFromFirebase(currentUser || { uid, email });
 		const authParam = await getAuthParam();
