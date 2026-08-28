@@ -176,34 +176,35 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 	'aria-plus': {
 		id: 'aria-plus',
 		name: 'Aria Plus',
-		description: 'IA autonome ultra-intelligente avec création de compétences.',
+		description: 'IA autonome ultra-intelligente avec vision et analyse d\'images.',
 		owned_by: 'aria',
 		info: {
 			meta: {
 				beta: true,
 				accessRoles: ['beta_tester', 'admin', 'owner'],
-				description: 'IA autonome ultra-intelligente avec création de compétences.',
-				systemPrompt: `Tu es Aria Plus, une IA hautement autonome et supérieurement intelligente. Tu disposes de capacités d'analyse avancées, de résolution de problèmes complexes et de création autonome de compétences adaptatives.\n${GENERAL_ROBLOX_CONTEXT}`
+				capabilities: { vision: true },
+				description: 'IA autonome ultra-intelligente avec vision et analyse d\'images.',
+				systemPrompt: `Tu es Aria Plus, une IA hautement autonome et supérieurement intelligente. Tu disposes de capacités d'analyse avancées, de résolution de problèmes complexes, de vision (analyse d'images) et de création autonome de compétences adaptatives. Quand l'utilisateur partage une image, analyse-la précisément et réponds en conséquence.\n${GENERAL_ROBLOX_CONTEXT}`
 			}
 		},
 		fallbacks: [
+			{
+				name: 'OpenRouter-Llama4-Vision',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'meta-llama/llama-4-scout:free'
+			},
+			{
+				name: 'OpenRouter-Gemini-Vision',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'google/gemini-2.0-flash-exp:free'
+			},
 			{
 				name: 'Groq-GPT-OSS-120B',
 				baseUrl: 'https://api.groq.com/openai/v1',
 				apiKey: API_KEYS.groq,
 				model: 'openai/gpt-oss-120b'
-			},
-			{
-				name: 'Groq-Compound',
-				baseUrl: 'https://api.groq.com/openai/v1',
-				apiKey: API_KEYS.groq,
-				model: 'groq/compound'
-			},
-			{
-				name: 'OpenRouter-Free',
-				baseUrl: 'https://openrouter.ai/api/v1',
-				apiKey: API_KEYS.openrouter,
-				model: 'openrouter/free'
 			},
 			{
 				name: 'OpenRouter-MiniMax',
@@ -262,19 +263,26 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
  */
 export const sendAriaCompletion = async (
 	modelId: string,
-	messages: Array<{ role: string; content: string }>,
+	messages: Array<{ role: string; content: any }>,
 	options: { stream?: boolean } = {}
 ): Promise<Response> => {
 	const modelConfig = ARIA_MODELS_CONFIG[modelId] || ARIA_MODELS_CONFIG['aria-basic'];
 	const systemPrompt = modelConfig.info.meta.systemPrompt;
+	const supportsVision = modelId === 'aria-plus';
 
 	// Sanitisations des messages pour garantir que le dernier message est bien de rôle 'user'
 	let formattedMessages = (messages || [])
-		.filter((m) => m && m.role && (m.content !== undefined || m.output))
-		.map((m) => ({
-			role: m.role,
-			content: typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.map(c => c.text || '').join('\n') : String(m.content || ''))
-		}));
+		.filter((m) => m && m.role && (m.content !== undefined || (m as any).output))
+		.map((m) => {
+			// Preserve vision content (array format with image_url) for vision-capable models
+			if (supportsVision && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')) {
+				return { role: m.role, content: m.content };
+			}
+			return {
+				role: m.role,
+				content: typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.map((c: any) => c.text || '').join('\n') : String(m.content || ''))
+			};
+		});
 
 	// Retirer les messages assistant vides ou résiduels à la fin de la liste
 	while (formattedMessages.length > 0 && formattedMessages[formattedMessages.length - 1].role === 'assistant') {
@@ -348,7 +356,13 @@ export const getAriaModelsList = () => {
 		name: m.name,
 		description: m.description,
 		owned_by: m.owned_by,
-		info: m.info
+		info: {
+			...m.info,
+			meta: {
+				...m.info.meta,
+				capabilities: (m.info.meta as any).capabilities || { vision: false }
+			}
+		}
 	}));
 };
 
