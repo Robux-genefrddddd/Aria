@@ -400,18 +400,18 @@ export const calculateModelTokenUsage = (
 	let multiplier = 1.0;
 
 	if (cleanKey.includes('code')) {
-		multiplier = 3.0;
+		multiplier = 5.0;
 	} else if (cleanKey.includes('reflection') || cleanKey.includes('réflexion')) {
-		multiplier = 2.0;
+		multiplier = 3.5;
 	} else if (cleanKey.includes('plus')) {
-		multiplier = 1.5;
+		multiplier = 2.5;
 	} else {
-		multiplier = 1.0;
+		multiplier = 1.5;
 	}
 
-	// Consommation douce et calibrée : ~1 token pour 18 caractères
+	// ~1 token pour 4 caractères (ratio réaliste)
 	const totalChars = (inputLength || 0) + (outputLength || 0);
-	const baseTokens = Math.max(3, Math.ceil(totalChars / 18));
+	const baseTokens = Math.max(10, Math.ceil(totalChars / 4));
 	return Math.ceil(baseTokens * multiplier);
 };
 
