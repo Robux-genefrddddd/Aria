@@ -49,6 +49,23 @@ export const onAuthChange = (callback: (user: User | null) => void) =>
 
 const OWNER_UIDS = ['QH8wKG8nWZVtUQEy2pppuBuNZgC3'];
 
+/** Génère le paramètre d'authentification pour les requêtes REST Firebase Realtime Database */
+export const getAuthParam = async (): Promise<string> => {
+	try {
+		if (auth.currentUser) {
+			const token = await auth.currentUser.getIdToken();
+			if (token) return `?auth=${token}`;
+		}
+		if (typeof window !== 'undefined') {
+			const storedToken = localStorage.token || localStorage.getItem('token');
+			if (storedToken && storedToken.length > 20) {
+				return `?auth=${storedToken}`;
+			}
+		}
+	} catch (e) {}
+	return '';
+};
+
 /** Récupère le rôle d'un utilisateur depuis Firebase (Custom Claims ou Realtime Database) */
 export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise<'owner' | 'admin' | 'beta_tester' | 'user' | string> => {
 	try {
@@ -68,8 +85,10 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 			}
 		}
 
+		const authParam = await getAuthParam();
+
 		// 2. Vérifier dans la Realtime Database Firebase (/users/{uid})
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}.json${authParam}`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -81,7 +100,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 		}
 
 		// 3. Vérifier directement dans (/users/{uid}/role.json)
-		const roleUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/role.json`;
+		const roleUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/role.json${authParam}`;
 		const roleRes = await fetch(roleUrl);
 		if (roleRes.ok) {
 			const roleData = await roleRes.json();
@@ -91,7 +110,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 		}
 
 		// 4. Vérifier dans (/admins/{uid}.json)
-		const adminCheckUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/admins/${firebaseUser.uid}.json`;
+		const adminCheckUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/admins/${firebaseUser.uid}.json${authParam}`;
 		const adminRes = await fetch(adminCheckUrl);
 		if (adminRes.ok) {
 			const adminData = await adminRes.json();
@@ -102,7 +121,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 
 		// 5. Recherche par email si l'UID diffère dans Firebase
 		if (firebaseUser.email) {
-			const allUsersUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json`;
+			const allUsersUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json${authParam}`;
 			const allRes = await fetch(allUsersUrl);
 			if (allRes.ok) {
 				const allUsers = await allRes.json();
@@ -132,7 +151,8 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 	const email = firebaseUser.email || `${uid}@aria.local`;
 	const displayName = customName || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Utilisateur');
 	const photoUrl = firebaseUser.photoURL || null;
-	const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+	const authParam = await getAuthParam();
+	const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 
 	try {
 		// 1. Lire les données existantes dans Firebase RTDB pour conserver les modifications de rôle d'admin
@@ -184,7 +204,8 @@ export const saveUserToFirebaseDatabase = async (
 	userData: { email: string; name: string; role?: string }
 ) => {
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -216,7 +237,8 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 	// Récupérer la limite de tokens customisée si définie
 	let userTokenLimit: number | null = null;
 	try {
-		const uRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/token_limit.json`);
+		const authParam = await getAuthParam();
+		const uRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/token_limit.json${authParam}`);
 		if (uRes.ok) {
 			const uData = await uRes.json();
 			if (uData !== null && uData !== undefined) userTokenLimit = Number(uData);
@@ -266,7 +288,8 @@ export const getFirebaseUserSettings = async (uid?: string): Promise<Record<stri
 	}
 
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${currentUid}/settings.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${currentUid}/settings.json${authParam}`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -309,7 +332,8 @@ export const saveFirebaseUserSettings = async (
 	}
 
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${currentUid}/settings.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${currentUid}/settings.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -325,7 +349,8 @@ export const saveFirebaseUserSettings = async (
 /** Récupère la liste de tous les utilisateurs depuis Firebase Realtime Database */
 export const getFirebaseAllUsers = async (): Promise<any[]> => {
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json${authParam}`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -352,7 +377,8 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 /** Met à jour le rôle d'un utilisateur dans Firebase Realtime Database */
 export const updateFirebaseUserRole = async (uid: string, role: string) => {
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -366,7 +392,8 @@ export const updateFirebaseUserRole = async (uid: string, role: string) => {
 /** Supprime un utilisateur de Firebase Realtime Database */
 export const deleteFirebaseUser = async (uid: string) => {
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'DELETE'
 		});
@@ -378,7 +405,8 @@ export const deleteFirebaseUser = async (uid: string) => {
 /** Met à jour les informations d'un utilisateur dans Firebase Realtime Database */
 export const updateFirebaseUser = async (uid: string, updates: Record<string, any>) => {
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -396,9 +424,10 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 	let es: EventSource | null = null;
 	let interval: any = null;
 
-	const connect = () => {
+	const connect = async () => {
 		try {
-			const url = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+			const authParam = await getAuthParam();
+			const url = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 			es = new EventSource(url);
 
 			es.addEventListener('put', (event: any) => {
@@ -439,8 +468,9 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 	// Filet de sécurité léger (toutes les 3.5 secondes)
 	interval = setInterval(async () => {
 		try {
+			const authParam = await getAuthParam();
 			const res = await fetch(
-				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`
 			);
 			if (res.ok) {
 				const data = await res.json();
@@ -464,7 +494,8 @@ export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCo
 		const todayStr = new Date().toISOString().split('T')[0];
 		const cleanModelKey = (String(modelId || 'aria-basic')).replace(/[^a-zA-Z0-9_-]/g, '_');
 
-		const tokensUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/tokens.json`;
+		const authParam = await getAuthParam();
+		const tokensUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/tokens.json${authParam}`;
 		const res = await fetch(tokensUrl);
 		let tokensData: any = {};
 		if (res.ok) {
@@ -498,7 +529,7 @@ export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCo
 };
 
 const getResolvedUid = (uid?: string): string => {
-	if (uid) return uid;
+	if (uid && uid !== 'anonymous' && uid !== 'undefined') return uid;
 	if (auth.currentUser?.uid) return auth.currentUser.uid;
 	if (typeof window !== 'undefined') {
 		const storedUid = localStorage.getItem('aria_uid');
@@ -507,7 +538,7 @@ const getResolvedUid = (uid?: string): string => {
 		if (userRaw && userRaw.trim() !== '') {
 			try {
 				const u = JSON.parse(userRaw);
-				if (u?.id) return u.id;
+				if (u?.id || u?.uid) return u.id || u.uid;
 			} catch {}
 		}
 	}
@@ -519,7 +550,8 @@ export const saveFirebaseUserChats = async (uid: string | undefined, chats: any[
 	const targetUid = getResolvedUid(uid);
 	if (!chats) return;
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -534,7 +566,8 @@ export const saveFirebaseUserChats = async (uid: string | undefined, chats: any[
 export const fetchFirebaseUserChats = async (uid?: string): Promise<any[]> => {
 	const targetUid = getResolvedUid(uid);
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json${authParam}`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -552,7 +585,8 @@ export const saveFirebaseSingleChat = async (uid: string | undefined, id: string
 	const targetUid = getResolvedUid(uid);
 	if (!id || !chatData) return;
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json${authParam}`;
 		await fetch(dbUrl, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -568,7 +602,8 @@ export const fetchFirebaseSingleChat = async (uid: string | undefined, id: strin
 	const targetUid = getResolvedUid(uid);
 	if (!id) return null;
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json${authParam}`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -585,7 +620,8 @@ export const deleteFirebaseSingleChat = async (uid: string | undefined, id: stri
 	const targetUid = getResolvedUid(uid);
 	if (!id) return;
 	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json`;
+		const authParam = await getAuthParam();
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json${authParam}`;
 		await fetch(dbUrl, { method: 'DELETE' });
 	} catch (e) {}
 };

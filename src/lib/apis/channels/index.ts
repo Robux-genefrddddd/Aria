@@ -44,8 +44,6 @@ export const createNewChannel = async (token: string = '', channel: ChannelForm)
 };
 
 export const getChannels = async (token: string = '') => {
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/channels/`, {
 		method: 'GET',
 		headers: {
@@ -62,16 +60,10 @@ export const getChannels = async (token: string = '') => {
 			return json;
 		})
 		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
+			return [];
 		});
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || [];
 };
 
 export const getChannelById = async (token: string = '', channel_id: string) => {
