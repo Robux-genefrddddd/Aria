@@ -194,6 +194,24 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(payload)
 		});
+
+		// 3. Écrire dans user_index (path écrit par chaque user lui-même → toujours autorisé)
+		const indexEntry = {
+			name: payload.name,
+			email: payload.email,
+			role: payload.role,
+			profile_image_url: payload.profile_image_url || null,
+			created_at: payload.created_at,
+			last_active_at: payload.last_active_at
+		};
+		await fetch(
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index/${uid}.json${authParam}`,
+			{
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(indexEntry)
+			}
+		);
 	} catch (e) {
 		console.warn('ensureFirebaseUserExists RTDB sync error:', e);
 	}
@@ -376,13 +394,11 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 	}
 
 	// 2. Charger les utilisateurs depuis Firebase RTDB
+	// Essai 1 : lecture directe de /users.json (nécessite règle owner dans Firebase Rules)
 	try {
 		const authParam = await getAuthParam();
 		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json${authParam}`;
-		let res = await fetch(dbUrl);
-		if (!res.ok) {
-			res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json`);
-		}
+		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
 			if (data && typeof data === 'object') {
@@ -404,6 +420,34 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 		}
 	} catch (e) {
 		console.warn('Failed to fetch users from Firebase:', e);
+	}
+
+	// Essai 2 : lire depuis user_index (path public écrit par chaque user à son login)
+	if (usersMap.size <= 1) {
+		try {
+			const authParam = await getAuthParam();
+			const idxRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index.json${authParam}`);
+			if (idxRes.ok) {
+				const idx = await idxRes.json();
+				if (idx && typeof idx === 'object') {
+					for (const [uid, u] of Object.entries(idx) as [string, any][]) {
+						if (!usersMap.has(uid) && u) {
+							usersMap.set(uid, {
+								id: uid,
+								name: (u as any).name || 'Utilisateur',
+								email: (u as any).email || 'user@aria.local',
+								role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3') ? 'owner' : ((u as any).role || 'user'),
+								profile_image_url: (u as any).profile_image_url || '/User.avif',
+								created_at: (u as any).created_at || Math.floor(Date.now() / 1000),
+								last_active_at: (u as any).last_active_at || Math.floor(Date.now() / 1000),
+								updated_at: (u as any).updated_at || Math.floor(Date.now() / 1000),
+								oauth_sub: null
+							});
+						}
+					}
+				}
+			}
+		} catch (e) {}
 	}
 
 	// 3. Toujours inclure l'utilisateur actuel s'il est connecté
