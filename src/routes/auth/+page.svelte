@@ -222,14 +222,6 @@
 			>
 				<!-- Brand Header Minimaliste -->
 				<div class="flex flex-col items-center text-center mb-6">
-					<img
-						src="/android-chrome-192x192.png"
-						alt="Aria"
-						class="size-11 object-contain mb-3"
-						on:error={(e) => {
-							e.currentTarget.style.display = 'none';
-						}}
-					/>
 					<h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
 						Aria
 					</h1>

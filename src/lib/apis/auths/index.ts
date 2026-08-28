@@ -155,7 +155,7 @@ export const getSessionUser = async (token: string) => {
 			// Check if Firebase has a profile_image_url
 			const uid = res.id || res.uid;
 			if (uid) {
-				const fbRes = await fetch(`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`);
+				const fbRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`);
 				if (fbRes.ok) {
 					const fbData = await fbRes.json();
 					if (fbData?.profile_image_url) {
@@ -524,7 +524,7 @@ export const updateUserProfile = async (token: string, profile: object) => {
 		try {
 			const uid = localStorage.getItem('user_id') || 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
 			fetch(
-				`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`,
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`,
 				{
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },

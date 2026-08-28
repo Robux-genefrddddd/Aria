@@ -1,6 +1,6 @@
 import { WEBUI_API_BASE_URL } from '$lib/constants';
 
-const RTDB_BASE_URL = 'https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app';
+const RTDB_BASE_URL = 'https://vostockfr-3b08c-default-rtdb.firebaseio.com';
 
 const getCurrentUserInfo = () => {
 	try {

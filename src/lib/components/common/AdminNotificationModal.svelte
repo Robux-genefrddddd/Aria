@@ -21,7 +21,7 @@
 
 		try {
 			const res = await fetch(
-				`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}/notification.json`
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/notification.json`
 			);
 			if (res.ok) {
 				const data = await res.json();
@@ -43,7 +43,7 @@
 		if (uid) {
 			try {
 				await fetch(
-					`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}/notification.json`,
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/notification.json`,
 					{ method: 'DELETE' }
 				);
 			} catch (e) {}

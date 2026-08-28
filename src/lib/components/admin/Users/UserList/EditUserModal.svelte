@@ -77,7 +77,7 @@
 				token_limit: tokenLimitNum
 			});
 			await fetch(
-				`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${selectedUser.id}/token_limit.json`,
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${selectedUser.id}/token_limit.json`,
 				{
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },

@@ -35,7 +35,7 @@
 
 		let fbData: any = null;
 		try {
-			const res = await fetch(`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`);
+			const res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`);
 			if (res.ok) {
 				fbData = await res.json();
 			}

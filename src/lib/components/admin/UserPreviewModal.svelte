@@ -28,7 +28,7 @@
 			let fbUser: any = null;
 			try {
 				const fbRes = await fetch(
-					`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${userId}.json`
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}.json`
 				);
 				if (fbRes.ok) {
 					fbUser = await fbRes.json();
@@ -111,7 +111,7 @@
 		sendingNotif = true;
 		try {
 			const res = await fetch(
-				`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${userId}/notification.json`,
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}/notification.json`,
 				{
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
@@ -143,7 +143,7 @@
 			const limitNum = Number(customTokenLimit) || 1300;
 			await Promise.all([
 				fetch(
-					`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${userId}/token_limit.json`,
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}/token_limit.json`,
 					{
 						method: 'PUT',
 						headers: { 'Content-Type': 'application/json' },
@@ -151,7 +151,7 @@
 					}
 				),
 				fetch(
-					`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${userId}.json`,
+					`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${userId}.json`,
 					{
 						method: 'PATCH',
 						headers: { 'Content-Type': 'application/json' },

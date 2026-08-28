@@ -14,14 +14,14 @@ import {
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-	apiKey: 'AIzaSyD7KlxN05OoSCGHwjXhiiYyKF5bOXianLY',
-	authDomain: 'keysystem-d0b86-8df89.firebaseapp.com',
-	databaseURL: 'https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app',
-	projectId: 'keysystem-d0b86-8df89',
-	storageBucket: 'keysystem-d0b86-8df89.firebasestorage.app',
-	messagingSenderId: '1048409565735',
-	appId: '1:1048409565735:web:9f45b4615dbb0fa20dfc02',
-	measurementId: 'G-7LKZ6L01Q9'
+	apiKey: 'AIzaSyB7tZowGRZtWEtUMq_Dc0QlFc2dH59inJ8',
+	authDomain: 'vostockfr-3b08c.firebaseapp.com',
+	databaseURL: 'https://vostockfr-3b08c-default-rtdb.firebaseio.com',
+	projectId: 'vostockfr-3b08c',
+	storageBucket: 'vostockfr-3b08c.firebasestorage.app',
+	messagingSenderId: '170484032487',
+	appId: '1:170484032487:web:004296664b747b9b1c1342',
+	measurementId: 'G-W0SPPR2MC9'
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -69,7 +69,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 		}
 
 		// 2. Vérifier dans la Realtime Database Firebase (/users/{uid})
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${firebaseUser.uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}.json`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -81,7 +81,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 		}
 
 		// 3. Vérifier directement dans (/users/{uid}/role.json)
-		const roleUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${firebaseUser.uid}/role.json`;
+		const roleUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/role.json`;
 		const roleRes = await fetch(roleUrl);
 		if (roleRes.ok) {
 			const roleData = await roleRes.json();
@@ -91,7 +91,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 		}
 
 		// 4. Vérifier dans (/admins/{uid}.json)
-		const adminCheckUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/admins/${firebaseUser.uid}.json`;
+		const adminCheckUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/admins/${firebaseUser.uid}.json`;
 		const adminRes = await fetch(adminCheckUrl);
 		if (adminRes.ok) {
 			const adminData = await adminRes.json();
@@ -102,7 +102,7 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 
 		// 5. Recherche par email si l'UID diffère dans Firebase
 		if (firebaseUser.email) {
-			const allUsersUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users.json`;
+			const allUsersUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json`;
 			const allRes = await fetch(allUsersUrl);
 			if (allRes.ok) {
 				const allUsers = await allRes.json();
@@ -130,7 +130,7 @@ export const saveUserToFirebaseDatabase = async (
 	userData: { email: string; name: string; role?: string }
 ) => {
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -153,7 +153,7 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 
 	// Auto-persist every user (Google, Github, Email) to Firebase Realtime Database
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${firebaseUser.uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}.json`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -181,7 +181,7 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 	// Fetch custom token limit if set
 	let userTokenLimit: number | null = null;
 	try {
-		const uRes = await fetch(`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${firebaseUser.uid}/token_limit.json`);
+		const uRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/token_limit.json`);
 		if (uRes.ok) {
 			const uData = await uRes.json();
 			if (uData !== null && uData !== undefined) userTokenLimit = Number(uData);
@@ -231,7 +231,7 @@ export const getFirebaseUserSettings = async (uid?: string): Promise<Record<stri
 	}
 
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${currentUid}/settings.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${currentUid}/settings.json`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -274,7 +274,7 @@ export const saveFirebaseUserSettings = async (
 	}
 
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${currentUid}/settings.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${currentUid}/settings.json`;
 		await fetch(dbUrl, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -290,7 +290,7 @@ export const saveFirebaseUserSettings = async (
 /** Récupère la liste de tous les utilisateurs depuis Firebase Realtime Database */
 export const getFirebaseAllUsers = async (): Promise<any[]> => {
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -317,7 +317,7 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 /** Met à jour le rôle d'un utilisateur dans Firebase Realtime Database */
 export const updateFirebaseUserRole = async (uid: string, role: string) => {
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -331,7 +331,7 @@ export const updateFirebaseUserRole = async (uid: string, role: string) => {
 /** Supprime un utilisateur de Firebase Realtime Database */
 export const deleteFirebaseUser = async (uid: string) => {
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
 		await fetch(dbUrl, {
 			method: 'DELETE'
 		});
@@ -343,7 +343,7 @@ export const deleteFirebaseUser = async (uid: string) => {
 /** Met à jour les informations d'un utilisateur dans Firebase Realtime Database */
 export const updateFirebaseUser = async (uid: string, updates: Record<string, any>) => {
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
 		await fetch(dbUrl, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -363,7 +363,7 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 
 	const connect = () => {
 		try {
-			const url = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`;
+			const url = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
 			es = new EventSource(url);
 
 			es.addEventListener('put', (event: any) => {
@@ -405,7 +405,7 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 	interval = setInterval(async () => {
 		try {
 			const res = await fetch(
-				`https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`
+				`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`
 			);
 			if (res.ok) {
 				const data = await res.json();
@@ -425,7 +425,7 @@ export const recordFirebaseTokenUsage = async (uid: string, tokensCount: number,
 	if (!uid || !tokensCount) return;
 	try {
 		const todayStr = new Date().toISOString().split('T')[0];
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${uid}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = (await res.json()) || {};
@@ -479,7 +479,7 @@ export const saveFirebaseUserChats = async (uid: string | undefined, chats: any[
 	const targetUid = getResolvedUid(uid);
 	if (!chats) return;
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${targetUid}/chats.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json`;
 		await fetch(dbUrl, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -494,7 +494,7 @@ export const saveFirebaseUserChats = async (uid: string | undefined, chats: any[
 export const fetchFirebaseUserChats = async (uid?: string): Promise<any[]> => {
 	const targetUid = getResolvedUid(uid);
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${targetUid}/chats.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -512,7 +512,7 @@ export const saveFirebaseSingleChat = async (uid: string | undefined, id: string
 	const targetUid = getResolvedUid(uid);
 	if (!id || !chatData) return;
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${targetUid}/chats_data/${id}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json`;
 		await fetch(dbUrl, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -528,7 +528,7 @@ export const fetchFirebaseSingleChat = async (uid: string | undefined, id: strin
 	const targetUid = getResolvedUid(uid);
 	if (!id) return null;
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${targetUid}/chats_data/${id}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
@@ -545,7 +545,7 @@ export const deleteFirebaseSingleChat = async (uid: string | undefined, id: stri
 	const targetUid = getResolvedUid(uid);
 	if (!id) return;
 	try {
-		const dbUrl = `https://keysystem-d0b86-8df89-default-rtdb.europe-west1.firebasedatabase.app/users/${targetUid}/chats_data/${id}.json`;
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data/${id}.json`;
 		await fetch(dbUrl, { method: 'DELETE' });
 	} catch (e) {}
 };
