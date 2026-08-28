@@ -346,9 +346,32 @@ export const sendAriaCompletion = async (
 				})
 			});
 
-			if (res.ok) {
-				return res;
+			if (!res.ok) {
+				lastError = new Error(`Provider ${provider.name} returned ${res.status}`);
+				continue;
 			}
+
+			// Peek the first chunk to detect SSE-level errors (Groq returns 200 OK then streams the error)
+			const cloned = res.clone();
+			const peekReader = cloned.body!.getReader();
+			const { value: firstChunk } = await peekReader.read();
+			peekReader.cancel();
+			const firstText = firstChunk ? new TextDecoder().decode(firstChunk) : '';
+			const firstLower = firstText.toLowerCase();
+			const isStreamError =
+				firstLower.includes('"error"') &&
+				(firstLower.includes('rate_limit') ||
+					firstLower.includes('rate limit') ||
+					firstLower.includes('quota') ||
+					firstLower.includes('limit exceeded') ||
+					firstLower.includes('429'));
+
+			if (isStreamError) {
+				lastError = new Error(`Provider ${provider.name} rate limited (stream error)`);
+				continue;
+			}
+
+			return res;
 		} catch (err: any) {
 			lastError = err;
 		}
