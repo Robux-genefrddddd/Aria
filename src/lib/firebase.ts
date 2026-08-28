@@ -626,7 +626,8 @@ export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCo
 	if (!targetUid || targetUid === 'anonymous' || !tokensCount || tokensCount <= 0) return;
 
 	try {
-		const todayStr = new Date().toISOString().split('T')[0];
+		const now = new Date();
+		const windowKey = `${now.toISOString().split('T')[0]}T${String(now.getUTCHours()).padStart(2, '0')}`;
 		const cleanModelKey = (String(modelId || 'aria-basic')).replace(/[^a-zA-Z0-9_-]/g, '_');
 
 		const authParam = await getAuthParam();
@@ -638,14 +639,14 @@ export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCo
 		}
 
 		const currentTotal = Number(tokensData?.total ?? 0) + tokensCount;
-		const currentDaily = Number(tokensData?.history?.[todayStr] ?? 0) + tokensCount;
+		const currentWindow = Number(tokensData?.history?.[windowKey] ?? 0) + tokensCount;
 		const currentModel = Number(tokensData?.models?.[cleanModelKey] ?? 0) + tokensCount;
 
 		const updatedTokens = {
 			total: currentTotal,
 			history: {
 				...(tokensData?.history || {}),
-				[todayStr]: currentDaily
+				[windowKey]: currentWindow
 			},
 			models: {
 				...(tokensData?.models || {}),

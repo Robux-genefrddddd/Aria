@@ -2836,11 +2836,12 @@
 			(item, index, array) => array.findIndex((i) => equal(i, item)) === index
 		);
 
-		// Check token quota limit for regular users (1300 max tokens by default or custom token_limit)
-		const isPrivileged = ['beta_tester', 'admin', 'owner'].includes($user?.role || '') || $user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
-		const maxAllowedTokens = $user?.token_limit ? Number($user.token_limit) : (isPrivileged ? 128000 : 1300);
-		const todayStr = new Date().toISOString().split('T')[0];
-		const currentUsedTokens = Number($user?.tokens?.history?.[todayStr] || 0);
+		// Check token quota limit
+		const { getRoleTokenLimit, isPrivilegedUser, getTokenWindowKey } = await import('$lib/utils/ariaModels');
+		const maxAllowedTokens = getRoleTokenLimit($user);
+		const isPrivileged = isPrivilegedUser($user);
+		const windowKey = getTokenWindowKey();
+		const currentUsedTokens = Number($user?.tokens?.history?.[windowKey] || 0);
 
 		// Calculate estimated minimum token usage for this model and prompt
 		let estimatedUsage = 30;
@@ -2851,7 +2852,7 @@
 		} catch (e) {}
 
 		if (!isPrivileged && (currentUsedTokens >= maxAllowedTokens || currentUsedTokens + estimatedUsage > maxAllowedTokens)) {
-			toast.error($i18n.t(`⚠️ Quota atteint (${currentUsedTokens} / ${maxAllowedTokens} tokens max). Attendez la réinitialisation ou devenez Bêta-Testeur.`), {
+			toast.error($i18n.t(`⚠️ Quota atteint (${currentUsedTokens} / ${maxAllowedTokens} tokens). Réinitialisation dans moins d'une heure.`), {
 				duration: 5000
 			});
 			return;
@@ -3184,12 +3185,13 @@
 		} = {}
 	) => {
 		// Block retry / regenerate if quota is exceeded
-		const isPrivileged = ['beta_tester', 'admin', 'owner'].includes($user?.role || '') || $user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
-		const maxAllowedTokens = $user?.token_limit ? Number($user.token_limit) : (isPrivileged ? 128000 : 1300);
-		const todayStr = new Date().toISOString().split('T')[0];
-		const currentUsedTokens = Number($user?.tokens?.history?.[todayStr] || 0);
+		const { getRoleTokenLimit: _rl, isPrivilegedUser: _ip, getTokenWindowKey: _gk } = await import('$lib/utils/ariaModels');
+		const maxAllowedTokens = _rl($user);
+		const isPrivileged = _ip($user);
+		const windowKey = _gk();
+		const currentUsedTokens = Number($user?.tokens?.history?.[windowKey] || 0);
 		if (!isPrivileged && currentUsedTokens >= maxAllowedTokens) {
-			toast.error($i18n.t(`⚠️ Quota atteint (${currentUsedTokens} / ${maxAllowedTokens} tokens max). Attendez la réinitialisation ou devenez Bêta-Testeur.`), {
+			toast.error($i18n.t(`⚠️ Quota atteint (${currentUsedTokens} / ${maxAllowedTokens} tokens). Réinitialisation dans moins d'une heure.`), {
 				duration: 5000
 			});
 			return;
@@ -3662,17 +3664,18 @@
 					);
 				} catch (e) {}
 
-				const todayStr = new Date().toISOString().split('T')[0];
-				const currentTokens = Number($user?.tokens?.history?.[todayStr] || 0);
-				const isPrivileged = ['beta_tester', 'admin', 'owner'].includes($user?.role || '') || $user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
-				const maxAllowedTokens = $user?.token_limit ? Number($user.token_limit) : (isPrivileged ? 128000 : 1300);
+				const { getRoleTokenLimit: __rl, isPrivilegedUser: __ip, getTokenWindowKey: __gk } = await import('$lib/utils/ariaModels');
+				const windowKey = __gk();
+				const currentTokens = Number($user?.tokens?.history?.[windowKey] || 0);
+				const isPrivileged = __ip($user);
+				const maxAllowedTokens = __rl($user);
 				const newTotal = isPrivileged ? (currentTokens + tokenUsage) : Math.min(maxAllowedTokens, currentTokens + tokenUsage);
-				
+
 				// Optimistically update the UI store so user sees it right away
 				if ($user) {
 					$user.tokens = $user.tokens || { history: {} };
 					$user.tokens.history = $user.tokens.history || {};
-					$user.tokens.history[todayStr] = newTotal;
+					$user.tokens.history[windowKey] = newTotal;
 					user.set({ ...$user });
 					localStorage.setItem('aria_user', JSON.stringify($user));
 				}
@@ -3869,12 +3872,13 @@
 	};
 
 	const continueResponse = async () => {
-		const isPrivileged = ['beta_tester', 'admin', 'owner'].includes($user?.role || '') || $user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
-		const maxAllowedTokens = $user?.token_limit ? Number($user.token_limit) : (isPrivileged ? 128000 : 1300);
-		const todayStr = new Date().toISOString().split('T')[0];
-		const currentUsedTokens = Number($user?.tokens?.history?.[todayStr] || 0);
+		const { getRoleTokenLimit: ___rl, isPrivilegedUser: ___ip, getTokenWindowKey: ___gk } = await import('$lib/utils/ariaModels');
+		const maxAllowedTokens = ___rl($user);
+		const isPrivileged = ___ip($user);
+		const windowKey = ___gk();
+		const currentUsedTokens = Number($user?.tokens?.history?.[windowKey] || 0);
 		if (!isPrivileged && currentUsedTokens >= maxAllowedTokens) {
-			toast.error($i18n.t(`⚠️ Quota atteint (${currentUsedTokens} / ${maxAllowedTokens} tokens max). Attendez la réinitialisation ou devenez Bêta-Testeur.`), {
+			toast.error($i18n.t(`⚠️ Quota atteint (${currentUsedTokens} / ${maxAllowedTokens} tokens). Réinitialisation dans moins d'une heure.`), {
 				duration: 5000
 			});
 			return;

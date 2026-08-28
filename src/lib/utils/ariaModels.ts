@@ -414,3 +414,25 @@ export const calculateModelTokenUsage = (
 	const baseTokens = Math.max(3, Math.ceil(totalChars / 18));
 	return Math.ceil(baseTokens * multiplier);
 };
+
+/** Clé de fenêtre horaire pour reset toutes les heures */
+export const getTokenWindowKey = (): string => {
+	const now = new Date();
+	return `${now.toISOString().split('T')[0]}T${String(now.getUTCHours()).padStart(2, '0')}`;
+};
+
+/** Limite de tokens par rôle */
+export const getRoleTokenLimit = (user: any): number => {
+	if (!user) return 500;
+	if (user.token_limit) return Number(user.token_limit);
+	const role = user.role || '';
+	if (role === 'owner' || user.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3') return Infinity;
+	if (role === 'admin') return Infinity;
+	if (role === 'beta_tester') return 1000;
+	return 500;
+};
+
+/** Vérifie si l'utilisateur est privilégié (pas de limite stricte) */
+export const isPrivilegedUser = (user: any): boolean => {
+	return getRoleTokenLimit(user) === Infinity;
+};
