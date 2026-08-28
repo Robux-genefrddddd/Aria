@@ -569,7 +569,7 @@
 									const decoder = new TextDecoder();
 
 									const _ariaProviderNames = ['llama', 'meta', 'groq', 'qwen', 'mistral', 'openrouter', 'gemini', 'cerebras', 'deepseek', 'siliconflow', 'huggingface', 'openai/gpt-oss'];
-									const _sanitizeSSELine = (line: string): string | null => {
+									const _sanitizeSSELine = (line) => {
 										if (!line.startsWith('data:')) return line;
 										const payload = line.slice(5).trim();
 										if (payload === '[DONE]') return line;
