@@ -32,8 +32,6 @@ export const createNewGroup = async (token: string, group: object) => {
 };
 
 export const getGroups = async (token: string = '', share?: boolean) => {
-	let error = null;
-
 	const searchParams = new URLSearchParams();
 	if (share !== undefined) {
 		searchParams.append('share', String(share));
@@ -48,23 +46,12 @@ export const getGroups = async (token: string = '', share?: boolean) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return [];
+			return res.json().catch(() => []);
 		})
-		.then((json) => {
-			return json;
-		})
-		.catch((err) => {
-			error = err.detail;
-			console.error(err);
-			return null;
-		});
+		.catch(() => []);
 
-	if (error) {
-		throw error;
-	}
-
-	return res;
+	return res || [];
 };
 
 export const getGroupById = async (token: string, id: string) => {

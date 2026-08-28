@@ -326,7 +326,6 @@ export const getUserSettings = async (token: string, raw = false) => {
 		console.warn('Firebase settings load error:', e);
 	}
 
-	let error = null;
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/settings${raw ? '?raw=true' : ''}`, {
 		method: 'GET',
 		headers: {
@@ -335,19 +334,10 @@ export const getUserSettings = async (token: string, raw = false) => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err?.detail ?? err;
-			return null;
-		});
-
-	if (error) {
-		console.warn('Backend user settings offline. Using default settings.');
-		return { ui: {} };
-	}
+		.catch(() => null);
 
 	return res || { ui: {} };
 };
@@ -360,8 +350,6 @@ export const updateUserSettings = async (token: string, settings: object) => {
 		console.warn('Firebase settings save error:', e);
 	}
 
-	let error = null;
-
 	const res = await fetch(`${WEBUI_API_BASE_URL}/users/user/settings/update`, {
 		method: 'POST',
 		headers: {
@@ -373,18 +361,10 @@ export const updateUserSettings = async (token: string, settings: object) => {
 		})
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
+			if (!res.ok) return null;
+			return res.json().catch(() => null);
 		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
+		.catch(() => null);
 
 	return res || settings;
 };
