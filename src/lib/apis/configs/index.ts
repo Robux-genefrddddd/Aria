@@ -774,9 +774,7 @@ export const setDefaultPromptSuggestions = async (token: string, promptSuggestio
 
 export const getBanners = async (token: string): Promise<Banner[]> => {
 	try {
-		const { getAuthParam } = await import('$lib/firebase');
-		const authParam = await getAuthParam();
-		const res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/banners.json${authParam}`);
+		const res = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/banners.json`);
 		if (res.status === 401) return [];
 		if (res.ok) {
 			const data = await res.json();

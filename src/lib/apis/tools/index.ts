@@ -23,10 +23,8 @@ export const loadToolByUrl = async (token: string = '', url: string) => {
 
 export const getTools = async (token: string = '', query: string | null = null) => {
 	try {
-		const { getAuthParam } = await import('$lib/firebase');
-		const authParam = await getAuthParam();
 		const res = await fetch(
-			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools.json${authParam}`
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools.json`
 		);
 		if (res.status === 401) return [];
 		if (res.ok) {
@@ -54,9 +52,8 @@ export const exportTools = async (token: string = '') => {
 
 export const getToolById = async (token: string, id: string) => {
 	try {
-		const authParam = await getAuthParam();
 		const res = await fetch(
-			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools/${id}.json${authParam}`
+			`https://vostockfr-3b08c-default-rtdb.firebaseio.com/public_configs/tools/${id}.json`
 		);
 		if (res.ok) return await res.json();
 	} catch (e) {}

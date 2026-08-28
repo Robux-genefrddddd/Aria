@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
-	import { models, settings, user } from '$lib/stores';
+	import { getContext } from 'svelte';
+	import { user } from '$lib/stores';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
 	const i18n = getContext('i18n');
@@ -8,38 +8,23 @@
 	export let compact = false;
 	export let className = '';
 
-	// State for token usage
-	let usedTokens = 0;
-	let maxTokens = 128000;
-	let percentage = 0;
-
-	$: {
-		const isPrivileged = ['beta_tester', 'admin', 'owner'].includes($user?.role || '') || $user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
-		maxTokens = $user?.token_limit ? Number($user.token_limit) : (isPrivileged ? 128000 : 1300);
-		percentage = maxTokens > 0 ? Math.min(100, Math.max(0, Math.round((Math.min(usedTokens, maxTokens) / maxTokens) * 100))) : 0;
-	}
-
 	const formatTokenNumber = (num: number) => {
 		if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
 		if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
 		return num.toString();
 	};
 
-	onMount(() => {
-		// Listen for chat token updates if emitted
-		const handleStorage = () => {
-			const saved = localStorage.getItem('aria_session_tokens');
-			usedTokens = saved !== null ? (parseInt(saved) || 0) : 0;
-		};
-		window.addEventListener('storage', handleStorage);
-		window.addEventListener('aria:tokens-updated', handleStorage);
-		handleStorage();
+	$: isPrivileged = ['beta_tester', 'admin', 'owner'].includes($user?.role || '') || $user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3';
+	$: maxTokens = $user?.token_limit ? Number($user.token_limit) : (isPrivileged ? 128000 : 50000);
 
-		return () => {
-			window.removeEventListener('storage', handleStorage);
-			window.removeEventListener('aria:tokens-updated', handleStorage);
-		};
-	});
+	$: usedTokens = (() => {
+		const history = $user?.tokens?.history;
+		if (!history) return 0;
+		const todayStr = new Date().toISOString().split('T')[0];
+		return Number(history[todayStr] || 0);
+	})();
+
+	$: percentage = maxTokens > 0 ? Math.min(100, Math.max(0, Math.round((Math.min(usedTokens, maxTokens) / maxTokens) * 100))) : 0;
 </script>
 
 <div class="w-full select-none {className}">

@@ -1180,10 +1180,13 @@
 							subscribeToUserLive(sessionUser.id, async (updatedData) => {
 								if (updatedData?.token_limit !== undefined) {
 									sessionUser.token_limit = updatedData.token_limit !== null ? Number(updatedData.token_limit) : null;
-									await user.set({ ...sessionUser });
-									localStorage.setItem('aria_user', JSON.stringify(sessionUser));
-									window.dispatchEvent(new Event('aria:tokens-updated'));
 								}
+								if (updatedData?.tokens !== undefined) {
+									sessionUser.tokens = updatedData.tokens;
+								}
+								await user.set({ ...sessionUser });
+								localStorage.setItem('aria_user', JSON.stringify(sessionUser));
+								window.dispatchEvent(new Event('aria:tokens-updated'));
 							});
 						} else if (!localStorage.token) {
 							await user.set(null);

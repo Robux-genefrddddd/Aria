@@ -237,14 +237,20 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 		localStorage.setItem('aria_profile_image_url', firebaseUser.photoURL);
 	}
 
-	// Récupérer la limite de tokens customisée si définie
+	// Récupérer la limite de tokens et l'historique de consommation
 	let userTokenLimit: number | null = null;
+	let userTokens: any = null;
 	try {
 		const authParam = await getAuthParam();
 		const uRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/token_limit.json${authParam}`);
 		if (uRes.ok) {
 			const uData = await uRes.json();
 			if (uData !== null && uData !== undefined) userTokenLimit = Number(uData);
+		}
+		const tRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/tokens.json${authParam}`);
+		if (tRes.ok) {
+			const tData = await tRes.json();
+			if (tData && typeof tData === 'object') userTokens = tData;
 		}
 	} catch (e) {}
 
@@ -254,6 +260,7 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 		name: displayName,
 		role: role,
 		token_limit: userTokenLimit,
+		tokens: userTokens,
 		profile_image_url: avatarUrl,
 		token: token,
 		permissions: {
@@ -531,7 +538,7 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 
 	connect();
 
-	// Filet de sécurité léger (toutes les 3.5 secondes)
+	// Filet de sécurité (toutes les 60 secondes, SSE gère le live)
 	interval = setInterval(async () => {
 		try {
 			const authParam = await getAuthParam();
@@ -543,7 +550,7 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 				if (data) onUpdate(data);
 			}
 		} catch {}
-	}, 3500);
+	}, 60000);
 
 	return () => {
 		es?.close();
