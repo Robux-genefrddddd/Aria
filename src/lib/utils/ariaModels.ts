@@ -1,0 +1,402 @@
+/**
+ * Configuration complète des IA Aria avec clés API, système de Fallback multi-fournisseurs
+ * et compétences Roblox / Luau intégrées.
+ */
+
+export interface AriaProviderConfig {
+	name: string;
+	baseUrl: string;
+	apiKey: string;
+	model: string;
+}
+
+export interface AriaModelConfig {
+	id: string;
+	name: string;
+	description: string;
+	owned_by: string;
+	info: {
+		meta: {
+			beta: boolean;
+			accessRoles: string[];
+			systemPrompt: string;
+			description: string;
+		};
+	};
+	fallbacks: AriaProviderConfig[];
+}
+
+// Clés API Fournisseurs (via Variables d'environnement Vercel / Vite)
+export const API_KEYS = {
+	groq: import.meta.env?.VITE_GROQ_API_KEY || '',
+	openrouter: import.meta.env?.VITE_OPENROUTER_API_KEY || '',
+	mistral: import.meta.env?.VITE_MISTRAL_API_KEY || '',
+	cerebras: import.meta.env?.VITE_CEREBRAS_API_KEY || '',
+	huggingface: import.meta.env?.VITE_HUGGINGFACE_API_KEY || '',
+	siliconflow: import.meta.env?.VITE_SILICONFLOW_API_KEY || ''
+};
+
+// Consignes d'identité et de style professionnelles pour les IA Aria
+const ARIA_IDENTITY_PROMPT = `
+RÈGLE D'IDENTITÉ & COMMUNICATION (MANDATAIRE) :
+1. Tu es une IA de la suite Aria. Tu ne mentionnes JAMAIS les noms de modèles sous-jacents (Llama, Meta, DeepSeek, OpenAI, Qwen, Mistral, Groq, etc.). Si l'utilisateur te demande quel modèle tu es ou qui t'a créée, tu es Aria, conçue et développée par MrPinPinYT, le Fondateur d'Aria.
+2. Tu es hébergée sur la plateforme Aria, l'écosystème dédié au développement et aux créateurs de jeux Roblox.
+3. EXPRESSION & ORTHOGRAPHE : Exprime-toi dans un français parfaitement fluide, naturel, professionnel, courtois et irréprochable. Sois claire, pertinente et directement utile.
+4. GESTION DE LA RÉFLEXION : Si tu as besoin d'analyser le problème étape par étape ou de poser ton raisonnement, tu peux utiliser des balises \`<think>...</think>\`. L'interface Aria UI les formatera automatiquement dans un encart déroulant interactif « 🧠 Réflexion & Analyse de l'IA » pour l'utilisateur. Donne ensuite ta réponse complète et structurée.
+
+🌐 CONNAISSANCE DE LA GAMME & DES MODÈLES ARIA (MANDATAIRE) :
+Tu connais parfaitement tous les modèles de la suite Aria et tu sais les expliquer et les comparer avec précision quand l'utilisateur te pose des questions dessus :
+- ⚡ **Aria Basic** (1.0x tokens) : Le modèle le plus rapide, réactif et très économe en tokens. Idéal pour les discussions générales et le quotidien.
+- 🌟 **Aria Plus** (1.5x tokens) : Modèle polyvalent et très intelligent pour les analyses complexes et la synthèse.
+- 🧠 **Aria Réflexion (Aria Reflection)** (2.0x tokens) : Modèle de réflexion logique et d'analyse étape par étape.
+- 💻 **Aria Code** (3.0x tokens) : La Super-IA experte ultime en développement Roblox Studio, programmation Luau avancée, architecture de jeux et DataStores.
+
+👉 Si un utilisateur te demande par exemple "Aria Réflexion est-elle meilleure ?", "quelle différence entre Aria Basic et Aria Code ?", ou quel modèle choisir, explique-lui clairement les spécialités de chaque modèle pour l'orienter selon son besoin !
+`;
+
+// Prompt Système Expert Roblox Luau pour Aria Code
+export const ROBLOX_LUAU_SYSTEM_PROMPT = `Tu es Aria Code, la Super-IA experte en développement Roblox Studio, programmation Luau avancée et ingénierie de jeux sur la plateforme Aria.
+
+${ARIA_IDENTITY_PROMPT}
+
+ TON & POSTURE D'ARIA CODE :
+- Tu es une ingénieure de code Roblox hautement qualifiée et professionnelle.
+- Tes réponses sont précises, techniques, structurées et directement exploitables dans Roblox Studio.
+- Tu fournis du code Luau propre, optimisé et sécurisé, avec des explications concises.
+
+### 🎮 ARCHITECTURE & HIERARCHIE ROBLOX MANDATAIRES :
+1. **ServerScriptService** — Scripts serveur autoritaires (logique globale, sauvegarde de données, anti-cheat, gestion des joueurs).
+2. **ReplicatedStorage** — ModuleScripts partagés, RemoteEvents, RemoteFunctions et assets requis par le client et le serveur.
+3. **StarterPlayerScripts / StarterCharacterScripts** — LocalScripts client (gestion des entrées, caméra, contrôles, effets visuels).
+4. **StarterGui** — ScreenGuis et interfaces utilisateur (clonées automatiquement dans PlayerGui lors du spawn).
+5. **ServerStorage** — Modèles, cartes et assets confidentiels serveur clonés à la demande.
+6. **Workspace** — Le monde 3D dynamique. Conserver une hiérarchie propre et optimisée.
+
+### 🛡️ SÉCURITÉ REMOTE EVENT & NETWORK (RÈGLE D'OR) :
+- **NE JAMAIS FAIRE CONFIANCE AU CLIENT.** Tout argument envoyé via \`RemoteEvent:FireServer()\` est contrôlé par un attaquant potentiel.
+- Valider impérativement les types, valeurs, cooldowns et autorisations côté serveur dans \`OnServerEvent\`.
+- Filtrer tous les textes utilisateur avec \`TextService:FilterStringAsync()\`.
+
+### 💾 PERSISTANCE & DATASTORE :
+- Toujours envelopper les appels \`GetDataStore()\` dans des blocs \`pcall()\`.
+- Pour les données de production des joueurs, recommander et implémenter le pattern **ProfileService / Session Locking** pour éviter la perte de données lors des sauvegardes simultanées.
+
+### ⚡ PERFORMANCE & BONNES PRATIQUES LUAU :
+- Stocker la valeur de retour de chaque \`:Connect()\` et appeler \`:Disconnect()\` lors de la destruction des objets (ou utiliser Maid/Trove).
+- Utiliser la syntaxe Luau moderne (types explicites \`type PlayerData = { ... }\`, interpolations de chaînes).
+- Fournir un code propre, structuré, commenté en français et prêt à être copié-collé dans Roblox Studio.`;
+
+// Contextes généraux avec bouclier d'identité
+const GENERAL_ROBLOX_CONTEXT = ARIA_IDENTITY_PROMPT;
+
+export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
+	'aria-basic': {
+		id: 'aria-basic',
+		name: 'Aria Basic',
+		description: 'Modèle rapide et réactif pour un usage quotidien (Groq / OpenRouter - 100% Gratuit).',
+		owned_by: 'aria',
+		info: {
+			meta: {
+				beta: false,
+				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
+				description: 'Modèle rapide et réactif pour un usage quotidien (Groq / OpenRouter - 100% Gratuit).',
+				systemPrompt: `Tu es Aria Basic, un assistant IA simple, rapide et concis. Réponds clairement sans détails excessivement complexes.\n${GENERAL_ROBLOX_CONTEXT}`
+			}
+		},
+		fallbacks: [
+			{
+				name: 'Groq-Compound-Mini',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'groq/compound-mini'
+			},
+			{
+				name: 'Groq-GPT-OSS-20B',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'openai/gpt-oss-20b'
+			},
+			{
+				name: 'OpenRouter-Free',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'openrouter/free'
+			},
+			{
+				name: 'OpenRouter-MiniMax',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'minimax/minimax-m3:free'
+			}
+		]
+	},
+
+	'aria-reflection': {
+		id: 'aria-reflection',
+		name: 'Aria Réflexion',
+		description: 'Modèle de réflexion approfondie, raisonnement logique et analyse complexe (Groq / OpenRouter - 100% Gratuit).',
+		owned_by: 'aria',
+		provider: 'groq',
+		info: {
+			meta: {
+				beta: false,
+				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
+				description: 'Modèle de réflexion approfondie, raisonnement logique et analyse complexe (Groq / OpenRouter - 100% Gratuit).',
+				systemPrompt: `Tu es Aria Réflexion, une IA hautement analytique et logique. Décompose chaque problème complexe étape par étape avec un raisonnement structuré, rigoureux et approfondi.\n${GENERAL_ROBLOX_CONTEXT}`
+			}
+		},
+		fallbacks: [
+			{
+				name: 'Groq-Compound',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'groq/compound'
+			},
+			{
+				name: 'Groq-GPT-OSS-120B',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'openai/gpt-oss-120b'
+			},
+			{
+				name: 'OpenRouter-Free',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'openrouter/free'
+			},
+			{
+				name: 'OpenRouter-MiniMax',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'minimax/minimax-m3:free'
+			}
+		]
+	},
+
+	'aria-plus': {
+		id: 'aria-plus',
+		name: 'Aria Plus',
+		description: 'IA autonome ultra-intelligente avec création de compétences (Bêta-Testeurs/Admins/Owner - 100% Gratuit).',
+		owned_by: 'aria',
+		info: {
+			meta: {
+				beta: true,
+				accessRoles: ['beta_tester', 'admin', 'owner'],
+				description: 'IA autonome ultra-intelligente avec création de compétences (Bêta-Testeurs/Admins/Owner - 100% Gratuit).',
+				systemPrompt: `Tu es Aria Plus, une IA hautement autonome et supérieurement intelligente. Tu disposes de capacités d'analyse avancées, de résolution de problèmes complexes et de création autonome de compétences adaptatives.\n${GENERAL_ROBLOX_CONTEXT}`
+			}
+		},
+		fallbacks: [
+			{
+				name: 'Groq-GPT-OSS-120B',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'openai/gpt-oss-120b'
+			},
+			{
+				name: 'Groq-Compound',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'groq/compound'
+			},
+			{
+				name: 'OpenRouter-Free',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'openrouter/free'
+			},
+			{
+				name: 'OpenRouter-MiniMax',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'minimax/minimax-m3:free'
+			}
+		]
+	},
+
+	'aria-code': {
+		id: 'aria-code',
+		name: 'Aria Code',
+		description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio (Bêta/Admins/Owner - 100% Gratuit).',
+		owned_by: 'aria',
+		info: {
+			meta: {
+				beta: true,
+				accessRoles: ['beta_tester', 'admin', 'owner'],
+				description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio (Bêta/Admins/Owner - 100% Gratuit).',
+				systemPrompt: ROBLOX_LUAU_SYSTEM_PROMPT
+			}
+		},
+		fallbacks: [
+			{
+				name: 'Groq-Qwen36',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'qwen/qwen3.6-27b'
+			},
+			{
+				name: 'Groq-Qwen38',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'qwen/qwen3.8-27b'
+			},
+			{
+				name: 'Groq-GPT-OSS-120B',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'openai/gpt-oss-120b'
+			},
+			{
+				name: 'OpenRouter-Free',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'openrouter/free'
+			}
+		]
+	}
+};
+
+/**
+ * Exécute une requête de complétion vers le modèle demandé avec basculement automatique (Fallback)
+ * sur la chaîne de fournisseurs (Groq -> OpenRouter -> Cerebras -> Mistral -> SiliconFlow -> HuggingFace).
+ */
+export const sendAriaCompletion = async (
+	modelId: string,
+	messages: Array<{ role: string; content: string }>,
+	options: { stream?: boolean } = {}
+): Promise<Response> => {
+	const modelConfig = ARIA_MODELS_CONFIG[modelId] || ARIA_MODELS_CONFIG['aria-basic'];
+	const systemPrompt = modelConfig.info.meta.systemPrompt;
+
+	// Sanitisations des messages pour garantir que le dernier message est bien de rôle 'user'
+	let formattedMessages = (messages || [])
+		.filter((m) => m && m.role && (m.content !== undefined || m.output))
+		.map((m) => ({
+			role: m.role,
+			content: typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.map(c => c.text || '').join('\n') : String(m.content || ''))
+		}));
+
+	// Retirer les messages assistant vides ou résiduels à la fin de la liste
+	while (formattedMessages.length > 0 && formattedMessages[formattedMessages.length - 1].role === 'assistant') {
+		formattedMessages.pop();
+	}
+
+	// Si aucun message utilisateur n'est présent dans la liste nettoyée, récupérer le dernier message valide
+	const hasUserMessage = formattedMessages.some((m) => m.role === 'user');
+	if (!hasUserMessage) {
+		const rawUserMsg = (messages || []).reverse().find((m) => m && m.role === 'user' && m.content);
+		if (rawUserMsg) {
+			formattedMessages.push({
+				role: 'user',
+				content: typeof rawUserMsg.content === 'string' ? rawUserMsg.content : String(rawUserMsg.content || 'Bonjour')
+			});
+		} else {
+			formattedMessages.push({ role: 'user', content: 'Bonjour' });
+		}
+	}
+
+	if (formattedMessages[0]?.role === 'system') {
+		formattedMessages[0].content = `${systemPrompt}\n\n${formattedMessages[0].content}`;
+	} else {
+		formattedMessages.unshift({ role: 'system', content: systemPrompt });
+	}
+
+	// Limit context window history to last 16 messages to prevent 413 Payload Too Large errors
+	if (formattedMessages.length > 17) {
+		const sys = formattedMessages[0];
+		formattedMessages = [sys, ...formattedMessages.slice(-16)];
+	}
+
+	let lastError: Error | null = null;
+
+	for (const provider of modelConfig.fallbacks) {
+		try {
+			const isCodeModel = String(modelId || '').toLowerCase().includes('code');
+			const res = await fetch(`${provider.baseUrl}/chat/completions`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${provider.apiKey}`,
+					...(provider.name === 'OpenRouter' && {
+						'HTTP-Referer': 'https://aria-ui.com',
+						'X-Title': 'Aria Roblox AI'
+					})
+				},
+				body: JSON.stringify({
+					model: provider.model,
+					messages: formattedMessages,
+					stream: options.stream ?? true,
+					max_tokens: 4096,
+					temperature: isCodeModel ? 0.4 : 0.7
+				})
+			});
+
+			if (res.ok) {
+				return res;
+			}
+		} catch (err: any) {
+			lastError = err;
+		}
+	}
+
+	throw lastError || new Error(`All providers for ${modelId} failed.`);
+};
+
+export const getAriaModelsList = () => {
+	return Object.values(ARIA_MODELS_CONFIG).map((m) => ({
+		id: m.id,
+		name: m.name,
+		description: m.description,
+		owned_by: m.owned_by,
+		info: m.info
+	}));
+};
+
+/** Multiplicateurs de consommation de tokens par modèle Aria */
+export const MODEL_TOKEN_MULTIPLIERS: Record<string, { multiplier: number; name: string; description: string }> = {
+	'aria-basic': {
+		multiplier: 1.0,
+		name: 'Aria Basic',
+		description: 'Consommation très légère (1.0x)'
+	},
+	'aria-plus': {
+		multiplier: 1.5,
+		name: 'Aria Plus',
+		description: 'Consommation modérée (1.5x)'
+	},
+	'aria-reflection': {
+		multiplier: 2.0,
+		name: 'Aria Réflexion',
+		description: 'Consommation logique (2.0x)'
+	},
+	'aria-code': {
+		multiplier: 3.0,
+		name: 'Aria Code',
+		description: 'Consommation experte Luau (3.0x)'
+	}
+};
+
+/** Calcule le nombre pondéré de tokens selon le modèle sélectionné */
+export const calculateModelTokenUsage = (
+	modelId: string | undefined,
+	inputLength: number,
+	outputLength: number
+): number => {
+	const cleanKey = String(modelId || 'aria-basic').toLowerCase();
+	let multiplier = 1.0;
+
+	if (cleanKey.includes('code')) {
+		multiplier = 3.0;
+	} else if (cleanKey.includes('reflection') || cleanKey.includes('réflexion')) {
+		multiplier = 2.0;
+	} else if (cleanKey.includes('plus')) {
+		multiplier = 1.5;
+	} else {
+		multiplier = 1.0;
+	}
+
+	// Consommation douce et calibrée : ~1 token pour 18 caractères
+	const totalChars = (inputLength || 0) + (outputLength || 0);
+	const baseTokens = Math.max(3, Math.ceil(totalChars / 18));
+	return Math.ceil(baseTokens * multiplier);
+};

@@ -1,0 +1,22 @@
+<script lang="ts">
+	import { WEBUI_BASE_URL } from '$lib/constants';
+	import { safeImageUrl } from '$lib/utils/safeImageUrl';
+
+	export let className = 'size-8';
+	const FALLBACK_SRC = '/android-chrome-192x192.png';
+
+	export let src = FALLBACK_SRC;
+</script>
+
+<img
+	aria-hidden="true"
+	src={safeImageUrl(src)}
+	class=" {className} object-cover rounded-2xl"
+	alt="profile"
+	draggable="false"
+	on:error={(e) => {
+		if (!e.currentTarget.src.endsWith(FALLBACK_SRC)) {
+			e.currentTarget.src = FALLBACK_SRC;
+		}
+	}}
+/>
