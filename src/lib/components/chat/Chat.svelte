@@ -207,28 +207,6 @@
 		return normalized;
 	};
 
-	$: userRole = ($user?.role || '').toLowerCase().trim();
-	$: hasBetaAccess =
-		userRole === 'owner' ||
-		userRole === 'admin' ||
-		userRole === 'beta_tester' ||
-		userRole === 'beta-tester' ||
-		userRole === 'tester' ||
-		userRole === 'beta';
-
-	$: if (!hasBetaAccess && selectedModels?.length > 0) {
-		const isUsingBeta = selectedModels.some((m) =>
-			['aria-plus', 'aria-code'].includes(m) || $models.find((model) => model.id === m)?.info?.meta?.beta
-		);
-		if (isUsingBeta) {
-			selectedModels = ['aria-basic'];
-			if ($settings?.models?.some((m) => ['aria-plus', 'aria-code'].includes(m))) {
-				settings.set({ ...$settings, models: ['aria-basic'] });
-			}
-			toast.warning($i18n.t('Accès réservé : Ce modèle nécessite le rôle Bêta-Testeur.'));
-		}
-	}
-
 	$: {
 		const modelSearchParam =
 			$page.url.searchParams.get('models') || $page.url.searchParams.get('model');
@@ -3671,13 +3649,14 @@
 					$user.tokens = $user.tokens || { history: {} };
 					$user.tokens.history = $user.tokens.history || {};
 					$user.tokens.history[todayStr] = newTotal;
-					user.set($user);
+					user.set({ ...$user });
+					localStorage.setItem('aria_user', JSON.stringify($user));
 				}
 				window.dispatchEvent(new Event('aria:tokens-updated'));
 
 				try {
 					const { recordFirebaseTokenUsage } = await import('$lib/firebase');
-					recordFirebaseTokenUsage($user?.id || 'anonymous', tokenUsage, modelIdentifier);
+					recordFirebaseTokenUsage($user?.id, tokenUsage, modelIdentifier);
 				} catch (e) {
 					console.warn('Firebase token usage record error:', e);
 				}

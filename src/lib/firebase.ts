@@ -124,6 +124,60 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 	return 'user';
 };
 
+/** Enregistre/Synchronise de manière robuste l'utilisateur (Google, GitHub, Email) dans Firebase Realtime Database */
+export const ensureFirebaseUserExists = async (firebaseUser: User | any, customName?: string): Promise<string> => {
+	if (!firebaseUser || !firebaseUser.uid) return 'user';
+
+	const uid = firebaseUser.uid;
+	const email = firebaseUser.email || `${uid}@aria.local`;
+	const displayName = customName || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Utilisateur');
+	const photoUrl = firebaseUser.photoURL || null;
+	const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
+
+	try {
+		// 1. Lire les données existantes dans Firebase RTDB pour conserver les modifications de rôle d'admin
+		const res = await fetch(dbUrl);
+		let existingUser: any = null;
+		if (res.ok) {
+			existingUser = await res.json();
+		}
+
+		let role = 'user';
+		if (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email.toLowerCase() === 'mrpinpinpro@gmail.com') {
+			role = 'owner';
+		} else if (existingUser?.role) {
+			role = existingUser.role; // Conserver le rôle modifié via le panneau d'admin!
+		}
+
+		const payload: Record<string, any> = {
+			id: uid,
+			email: email,
+			name: existingUser?.name || displayName,
+			role: role,
+			created_at: existingUser?.created_at || (firebaseUser.metadata?.creationTime
+				? Math.floor(new Date(firebaseUser.metadata.creationTime).getTime() / 1000)
+				: Math.floor(Date.now() / 1000)),
+			last_active_at: Math.floor(Date.now() / 1000),
+			updatedAt: Date.now()
+		};
+
+		if (photoUrl) {
+			payload.profile_image_url = photoUrl;
+		}
+
+		await fetch(dbUrl, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload)
+		});
+
+		return role;
+	} catch (e) {
+		console.warn('ensureFirebaseUserExists error:', e);
+		return 'user';
+	}
+};
+
 /** Enregistre les métadonnées de l'utilisateur dans Firebase Realtime Database */
 export const saveUserToFirebaseDatabase = async (
 	uid: string,
@@ -147,38 +201,19 @@ export const saveUserToFirebaseDatabase = async (
 /** Construit l'objet session Aria correspondant à l'utilisateur Firebase et l'enregistre en base */
 export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name?: string) => {
 	const token = await firebaseUser.getIdToken();
-	const role = await getUserRoleFromFirebase(firebaseUser);
+	
+	// Auto-persist & sync tous les utilisateurs (Google, Github, Email) dans Firebase Realtime Database
+	const role = await ensureFirebaseUserExists(firebaseUser, name);
+
 	const displayName = name || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User');
 	const email = firebaseUser.email || 'user@aria.local';
-
-	// Auto-persist every user (Google, Github, Email) to Firebase Realtime Database
-	try {
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}.json`;
-		await fetch(dbUrl, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				email: email,
-				name: displayName,
-				role: role,
-				profile_image_url: firebaseUser.photoURL || undefined,
-				created_at: firebaseUser.metadata?.creationTime
-					? Math.floor(new Date(firebaseUser.metadata.creationTime).getTime() / 1000)
-					: Math.floor(Date.now() / 1000),
-				last_active_at: Math.floor(Date.now() / 1000),
-				updatedAt: Date.now()
-			})
-		});
-	} catch (e) {
-		console.warn('Could not auto-register user to Firebase database:', e);
-	}
-
 	const avatarUrl = firebaseUser.photoURL || (typeof window !== 'undefined' ? localStorage.getItem('aria_profile_image_url') : null) || '/User.avif';
+
 	if (firebaseUser.photoURL && typeof window !== 'undefined') {
 		localStorage.setItem('aria_profile_image_url', firebaseUser.photoURL);
 	}
 
-	// Fetch custom token limit if set
+	// Récupérer la limite de tokens customisée si définie
 	let userTokenLimit: number | null = null;
 	try {
 		const uRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/token_limit.json`);
@@ -213,7 +248,7 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 			},
 			features: {
 				notes: true,
-				automations: role === 'admin',
+				automations: role === 'admin' || role === 'owner',
 				calendar: true
 			}
 		}
@@ -420,38 +455,43 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 	};
 };
 
-/** Enregistre la consommation de tokens par date et par modèle dans Firebase */
-export const recordFirebaseTokenUsage = async (uid: string, tokensCount: number, modelId?: any) => {
-	if (!uid || !tokensCount) return;
+/** Enregistre la consommation de tokens par date et par modèle dans Firebase Realtime Database */
+export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCount: number, modelId?: any) => {
+	const targetUid = getResolvedUid(uid);
+	if (!targetUid || targetUid === 'anonymous' || !tokensCount || tokensCount <= 0) return;
+
 	try {
 		const todayStr = new Date().toISOString().split('T')[0];
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json`;
-		const res = await fetch(dbUrl);
-		if (res.ok) {
-			const data = (await res.json()) || {};
-			const currentTotal = Number(data?.tokens?.total ?? 0) + tokensCount;
-			const currentDaily = Number(data?.tokens?.history?.[todayStr] ?? 0) + tokensCount;
-			const cleanModelKey = (String(modelId || 'aria-basic')).replace(/[^a-zA-Z0-9_-]/g, '_');
-			const currentModel = Number(data?.tokens?.models?.[cleanModelKey] ?? 0) + tokensCount;
+		const cleanModelKey = (String(modelId || 'aria-basic')).replace(/[^a-zA-Z0-9_-]/g, '_');
 
-			await fetch(`${dbUrl}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					tokens: {
-						total: currentTotal,
-						history: {
-							...(data?.tokens?.history || {}),
-							[todayStr]: currentDaily
-						},
-						models: {
-							...(data?.tokens?.models || {}),
-							[cleanModelKey]: currentModel
-						}
-					}
-				})
-			});
+		const tokensUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/tokens.json`;
+		const res = await fetch(tokensUrl);
+		let tokensData: any = {};
+		if (res.ok) {
+			tokensData = (await res.json()) || {};
 		}
+
+		const currentTotal = Number(tokensData?.total ?? 0) + tokensCount;
+		const currentDaily = Number(tokensData?.history?.[todayStr] ?? 0) + tokensCount;
+		const currentModel = Number(tokensData?.models?.[cleanModelKey] ?? 0) + tokensCount;
+
+		const updatedTokens = {
+			total: currentTotal,
+			history: {
+				...(tokensData?.history || {}),
+				[todayStr]: currentDaily
+			},
+			models: {
+				...(tokensData?.models || {}),
+				[cleanModelKey]: currentModel
+			}
+		};
+
+		await fetch(tokensUrl, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(updatedTokens)
+		});
 	} catch (e) {
 		console.warn('Failed to record token usage in Firebase:', e);
 	}

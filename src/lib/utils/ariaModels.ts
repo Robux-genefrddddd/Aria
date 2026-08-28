@@ -180,8 +180,8 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 		owned_by: 'aria',
 		info: {
 			meta: {
-				beta: true,
-				accessRoles: ['beta_tester', 'admin', 'owner'],
+				beta: false,
+				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
 				description: 'IA autonome ultra-intelligente avec création de compétences.',
 				systemPrompt: `Tu es Aria Plus, une IA hautement autonome et supérieurement intelligente. Tu disposes de capacités d'analyse avancées, de résolution de problèmes complexes et de création autonome de compétences adaptatives.\n${GENERAL_ROBLOX_CONTEXT}`
 			}
@@ -221,8 +221,8 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 		owned_by: 'aria',
 		info: {
 			meta: {
-				beta: true,
-				accessRoles: ['beta_tester', 'admin', 'owner'],
+				beta: false,
+				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
 				description: 'Super-IA experte en développement Roblox, Luau & Architecture Studio.',
 				systemPrompt: ROBLOX_LUAU_SYSTEM_PROMPT
 			}
