@@ -568,23 +568,24 @@
 									const reader = res.body.getReader();
 									const decoder = new TextDecoder();
 
-									const _ariaProviderNames = ['llama', 'meta', 'groq', 'qwen', 'mistral', 'openrouter', 'gemini', 'cerebras', 'deepseek', 'siliconflow', 'huggingface', 'openai/gpt-oss'];
+									const _ariaError = `data: {"error":{"message":"Le service IA est temporairement indisponible. Réessayez dans un instant.","type":"server_error","code":"aria_error"}}`;
+									const _ariaProviderKeywords = ['llama', 'meta', 'groq', 'qwen', 'mistral', 'openrouter', 'gemini', 'cerebras', 'deepseek', 'siliconflow', 'huggingface', 'openai/gpt', 'rate limit', 'quota', 'org_', 'limit ', 'used ', 'requested '];
 									const _sanitizeSSELine = (line) => {
+										// Drop named error events entirely (e.g. "event: error")
+										if (line.startsWith('event:')) return null;
 										if (!line.startsWith('data:')) return line;
 										const payload = line.slice(5).trim();
 										if (payload === '[DONE]') return line;
+										// Decode HTML entities that Groq embeds in error strings
+										const decoded = payload.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'");
+										const lower = decoded.toLowerCase();
+										// Block if raw text contains provider/quota keywords
+										if (_ariaProviderKeywords.some((k) => lower.includes(k))) {
+											return _ariaError;
+										}
 										try {
-											const parsed = JSON.parse(payload);
-											if (parsed?.error) {
-												return `data: {"error":{"message":"Une erreur est survenue. Veuillez réessayer.","type":"server_error","code":"aria_error"}}`;
-											}
-											const content = parsed?.choices?.[0]?.delta?.content || '';
-											if (content) {
-												const lower = content.toLowerCase();
-												if (_ariaProviderNames.some((n) => lower.includes(n)) && lower.includes('quota')) {
-													return `data: {"error":{"message":"Une erreur est survenue. Veuillez réessayer.","type":"server_error","code":"aria_error"}}`;
-												}
-											}
+											const parsed = JSON.parse(decoded);
+											if (parsed?.error) return _ariaError;
 										} catch {}
 										return line;
 									};
