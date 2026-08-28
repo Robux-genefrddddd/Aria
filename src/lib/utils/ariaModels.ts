@@ -325,9 +325,9 @@ export const sendAriaCompletion = async (
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${provider.apiKey}`,
-					...(provider.name === 'OpenRouter' && {
-						'HTTP-Referer': 'https://aria-ui.com',
-						'X-Title': 'Aria Roblox AI'
+					...(provider.name.startsWith('OpenRouter') && {
+						'HTTP-Referer': 'https://aria-studio-ia.vercel.app',
+						'X-Title': 'Aria Studio'
 					})
 				},
 				body: JSON.stringify({

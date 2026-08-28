@@ -978,6 +978,31 @@
 			return;
 		}
 
+		// Handle images locally (no backend needed — convert to base64 data URL)
+		if (file.type.startsWith('image/')) {
+			try {
+				const dataUrl = await new Promise<string>((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result as string);
+					reader.onerror = reject;
+					reader.readAsDataURL(file);
+				});
+				fileItem.type = 'image';
+				fileItem.status = 'uploaded';
+				fileItem.url = dataUrl;
+				fileItem.name = file.name;
+				files = files;
+			} catch (e) {
+				fileItem.status = 'error';
+				fileItem.error = `${e}`;
+				files = files.filter((item) => item?.itemId !== tempItemId);
+				toast.error($i18n.t('Failed to read image file.'));
+			} finally {
+				onUpdate({ file: fileItem });
+			}
+			return fileItem;
+		}
+
 		if (!$temporaryChatEnabled) {
 			try {
 				// If the file is an audio file, provide the language for STT.
