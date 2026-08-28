@@ -643,27 +643,7 @@ export const getChatListByTagName = async (token: string = '', tagName: string) 
 export const getChatById = async (token: string, id: string) => {
 	if (!id) return null;
 
-	// 1. Direct Local Storage check
-	try {
-		if (typeof window !== 'undefined') {
-			const direct = localStorage.getItem(`aria_chat_${id}`);
-			if (direct && direct.trim() !== '') {
-				const parsed = JSON.parse(direct);
-				if (parsed && (parsed.chat || parsed.messages || parsed.history)) return parsed;
-			}
-
-			const localSaved = localStorage.getItem('aria_local_chats');
-			if (localSaved && localSaved.trim() !== '') {
-				const parsed = JSON.parse(localSaved);
-				if (Array.isArray(parsed)) {
-					const found = parsed.find((c: any) => c.id === id);
-					if (found && (found.chat || found.messages || found.history)) return found;
-				}
-			}
-		}
-	} catch (e) {}
-
-	// 2. Firebase Realtime Database check
+	// 1. Firebase Realtime Database check (Primary Source of Truth)
 	try {
 		const { fetchFirebaseSingleChat, fetchFirebaseUserChats } = await import('$lib/firebase');
 		const singleChat = await fetchFirebaseSingleChat(undefined, id);
@@ -682,6 +662,26 @@ export const getChatById = async (token: string, id: string) => {
 					localStorage.setItem(`aria_chat_${id}`, JSON.stringify(found));
 				}
 				return found;
+			}
+		}
+	} catch (e) {}
+
+	// 2. Local Storage fallback (Offline cache only)
+	try {
+		if (typeof window !== 'undefined') {
+			const direct = localStorage.getItem(`aria_chat_${id}`);
+			if (direct && direct.trim() !== '') {
+				const parsed = JSON.parse(direct);
+				if (parsed && (parsed.chat || parsed.messages || parsed.history)) return parsed;
+			}
+
+			const localSaved = localStorage.getItem('aria_local_chats');
+			if (localSaved && localSaved.trim() !== '') {
+				const parsed = JSON.parse(localSaved);
+				if (Array.isArray(parsed)) {
+					const found = parsed.find((c: any) => c.id === id);
+					if (found && (found.chat || found.messages || found.history)) return found;
+				}
 			}
 		}
 	} catch (e) {}
