@@ -569,25 +569,41 @@
 									const decoder = new TextDecoder();
 
 									const _ariaError = `data: {"error":{"message":"Le service IA est temporairement indisponible. Réessayez dans un instant.","type":"server_error","code":"aria_error"}}`;
-									const _ariaProviderKeywords = ['llama', 'meta', 'groq', 'qwen', 'mistral', 'openrouter', 'gemini', 'cerebras', 'deepseek', 'siliconflow', 'huggingface', 'openai/gpt', 'rate limit', 'quota', 'org_', 'limit ', 'used ', 'requested '];
+									const _ariaProviderKeywords = ['rate limit', 'quota exceeded', 'org_', 'limit exceeded'];
 									const _sanitizeSSELine = (line) => {
-										// Drop named error events entirely (e.g. "event: error")
-										if (line.startsWith('event:')) return null;
-										if (!line.startsWith('data:')) return line;
-										const payload = line.slice(5).trim();
-										if (payload === '[DONE]') return line;
-										// Decode HTML entities that Groq embeds in error strings
+										// Ignore empty lines, named non-data events, and SSE comment lines like ": OPENROUTER PROCESSING"
+										const trimmed = line.trim();
+										if (!trimmed || trimmed.startsWith(':') || trimmed.startsWith('event:')) return null;
+										if (!trimmed.startsWith('data:')) return null;
+
+										const payload = trimmed.slice(5).trim();
+										if (!payload) return null;
+										if (payload === '[DONE]') return 'data: [DONE]';
+
+										// Decode HTML entities
 										const decoded = payload.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'");
 										const lower = decoded.toLowerCase();
-										// Block if raw text contains provider/quota keywords
+
+										// Block if raw text contains rate limit errors
 										if (_ariaProviderKeywords.some((k) => lower.includes(k))) {
 											return _ariaError;
 										}
+
 										try {
 											const parsed = JSON.parse(decoded);
 											if (parsed?.error) return _ariaError;
+
+											// Support reasoning models (DeepSeek-R1, Ling, Qwen) by mapping delta.reasoning to delta.content
+											if (parsed?.choices?.[0]?.delta) {
+												const delta = parsed.choices[0].delta;
+												if (!delta.content && delta.reasoning) {
+													delta.content = delta.reasoning;
+												}
+												return `data: ${JSON.stringify(parsed)}`;
+											}
 										} catch {}
-										return line;
+
+										return `data: ${decoded}`;
 									};
 
 									const processStream = async () => {
@@ -602,7 +618,7 @@
 											const chunk = decoder.decode(value, { stream: true });
 
 											// Process lines within the chunk
-											const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+											const lines = chunk.split('\n');
 
 											for (const line of lines) {
 												const sanitized = _sanitizeSSELine(line);

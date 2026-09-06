@@ -144,28 +144,34 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 		},
 		fallbacks: [
 			{
-				name: 'Groq-Compound-Mini',
+				name: 'Groq-Llama-3.3-70B',
 				baseUrl: 'https://api.groq.com/openai/v1',
 				apiKey: API_KEYS.groq,
-				model: 'groq/compound-mini'
+				model: 'llama-3.3-70b-versatile'
 			},
 			{
-				name: 'Groq-GPT-OSS-20B',
+				name: 'Groq-Llama-3.1-8B',
 				baseUrl: 'https://api.groq.com/openai/v1',
 				apiKey: API_KEYS.groq,
-				model: 'openai/gpt-oss-20b'
+				model: 'llama-3.1-8b-instant'
 			},
 			{
-				name: 'OpenRouter-Free',
+				name: 'OpenRouter-Llama-3.3-70B',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
-				model: 'openrouter/free'
+				model: 'meta-llama/llama-3.3-70b-instruct:free'
 			},
 			{
-				name: 'OpenRouter-MiniMax',
+				name: 'OpenRouter-Gemini-Flash',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
-				model: 'minimax/minimax-m3:free'
+				model: 'google/gemini-2.0-flash-exp:free'
+			},
+			{
+				name: 'OpenRouter-Mistral-24B',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'mistralai/mistral-small-24b-instruct-2501:free'
 			}
 		]
 	},
@@ -186,28 +192,28 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 		},
 		fallbacks: [
 			{
-				name: 'Groq-Compound',
+				name: 'Groq-Llama-3.3-70B',
 				baseUrl: 'https://api.groq.com/openai/v1',
 				apiKey: API_KEYS.groq,
-				model: 'groq/compound'
+				model: 'llama-3.3-70b-versatile'
 			},
 			{
-				name: 'Groq-GPT-OSS-120B',
-				baseUrl: 'https://api.groq.com/openai/v1',
-				apiKey: API_KEYS.groq,
-				model: 'openai/gpt-oss-120b'
-			},
-			{
-				name: 'OpenRouter-Free',
+				name: 'OpenRouter-DeepSeek-R1',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
-				model: 'openrouter/free'
+				model: 'deepseek/deepseek-r1:free'
 			},
 			{
-				name: 'OpenRouter-MiniMax',
+				name: 'OpenRouter-Qwen-72B',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
-				model: 'minimax/minimax-m3:free'
+				model: 'qwen/qwen-2.5-72b-instruct:free'
+			},
+			{
+				name: 'OpenRouter-Gemini-Flash',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'google/gemini-2.0-flash-exp:free'
 			}
 		]
 	},
@@ -228,28 +234,28 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 		},
 		fallbacks: [
 			{
-				name: 'OpenRouter-Llama4-Vision',
-				baseUrl: 'https://openrouter.ai/api/v1',
-				apiKey: API_KEYS.openrouter,
-				model: 'meta-llama/llama-4-scout:free'
-			},
-			{
 				name: 'OpenRouter-Gemini-Vision',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
 				model: 'google/gemini-2.0-flash-exp:free'
 			},
 			{
-				name: 'Groq-GPT-OSS-120B',
-				baseUrl: 'https://api.groq.com/openai/v1',
-				apiKey: API_KEYS.groq,
-				model: 'openai/gpt-oss-120b'
-			},
-			{
-				name: 'OpenRouter-MiniMax',
+				name: 'OpenRouter-Llama-Vision',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
-				model: 'minimax/minimax-m3:free'
+				model: 'meta-llama/llama-3.2-11b-vision-instruct:free'
+			},
+			{
+				name: 'Groq-Llama-3.3-70B',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'llama-3.3-70b-versatile'
+			},
+			{
+				name: 'OpenRouter-Llama-3.3-70B',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'meta-llama/llama-3.3-70b-instruct:free'
 			}
 		]
 	},
@@ -269,28 +275,28 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 		},
 		fallbacks: [
 			{
-				name: 'Groq-Qwen36',
+				name: 'Groq-Llama-3.3-70B',
 				baseUrl: 'https://api.groq.com/openai/v1',
 				apiKey: API_KEYS.groq,
-				model: 'qwen/qwen3.6-27b'
+				model: 'llama-3.3-70b-versatile'
 			},
 			{
-				name: 'Groq-Qwen38',
-				baseUrl: 'https://api.groq.com/openai/v1',
-				apiKey: API_KEYS.groq,
-				model: 'qwen/qwen3.8-27b'
-			},
-			{
-				name: 'Groq-GPT-OSS-120B',
-				baseUrl: 'https://api.groq.com/openai/v1',
-				apiKey: API_KEYS.groq,
-				model: 'openai/gpt-oss-120b'
-			},
-			{
-				name: 'OpenRouter-Free',
+				name: 'OpenRouter-Qwen-72B',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
-				model: 'openrouter/free'
+				model: 'qwen/qwen-2.5-72b-instruct:free'
+			},
+			{
+				name: 'OpenRouter-DeepSeek-Chat',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'deepseek/deepseek-chat:free'
+			},
+			{
+				name: 'OpenRouter-Mistral-24B',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'mistralai/mistral-small-24b-instruct-2501:free'
 			}
 		]
 	}
