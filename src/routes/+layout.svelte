@@ -593,7 +593,7 @@
 									const processStream = async () => {
 										while (true) {
 											// Mode anti-conso : abort if tab was hidden
-											if ((window as any).__ariaAntiConsoStop) {
+											if (window.__ariaAntiConsoStop) {
 												try { reader.cancel(); } catch {}
 												break;
 											}
@@ -1084,10 +1084,9 @@
 			pageIsVisible = false;
 			pageWasHidden = true;
 			clearDisconnectToastTimer();
-			// Mode anti-conso : arrêter la génération si l'onglet est masqué/fermé
-			const antiConso = ($settings as any)?.ariaAntiConso ?? true;
+			const antiConso = $settings?.ariaAntiConso ?? true;
 			if (antiConso) {
-				(window as any).__ariaAntiConsoStop = true;
+				window.__ariaAntiConsoStop = true;
 				window.dispatchEvent(new Event('aria:anti-conso-stop'));
 			}
 		};
@@ -1095,7 +1094,7 @@
 		const handlePageVisible = () => {
 			pageIsVisible = true;
 			lastVisibleAt = Date.now();
-			(window as any).__ariaAntiConsoStop = false;
+			window.__ariaAntiConsoStop = false;
 
 			isLastActiveTab.set(true); // This tab is now the active tab
 			try {
