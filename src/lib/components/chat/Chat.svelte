@@ -3601,7 +3601,20 @@
 				}
 			},
 			`${WEBUI_BASE_URL}/api`
-		).catch(async (error) => {
+		);
+
+		// Initialize Web Search Status Indicator
+		responseMessage.statusHistory = [
+			{
+				action: 'web_search',
+				description: 'Recherche Web : Roblox DevForum, actualites et tendances des jeux...',
+				done: false
+			}
+		];
+		history.messages[responseMessageId] = responseMessage;
+		history = history;
+
+		const res = await chatCompletionPromise.catch(async (error) => {
 			const safeMessage = sanitizeErrorMessage(error);
 			toast.error(safeMessage);
 			responseMessage.error = {
@@ -3617,6 +3630,17 @@
 			if (res.choices && res.choices[0]?.message?.content) {
 				const fullContent = res.choices[0].message.content;
 				
+				// Mark web search as completed
+				responseMessage.statusHistory = [
+					{
+						action: 'web_search',
+						description: 'Recherche Web terminee (Roblox DevForum et meta analysées)',
+						done: true
+					}
+				];
+				history.messages[responseMessageId] = responseMessage;
+				history = history;
+
 				// Animated typewriter streaming effect
 				let charIndex = 0;
 				const timer = setInterval(async () => {
