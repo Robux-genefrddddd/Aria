@@ -68,8 +68,11 @@ export const getAuthParam = async (): Promise<string> => {
 
 /** Récupère le rôle d'un utilisateur depuis Firebase (Custom Claims ou Realtime Database) */
 export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise<'owner' | 'admin' | 'beta_tester' | 'user' | string> => {
+	if (!firebaseUser?.uid || firebaseUser.uid === 'local-user-id' || firebaseUser.uid === 'anonymous') {
+		return 'user';
+	}
 	try {
-		if (firebaseUser?.uid && OWNER_UIDS.includes(firebaseUser.uid)) {
+		if (OWNER_UIDS.includes(firebaseUser.uid) || firebaseUser?.email === 'mrpinpinpro@gmail.com') {
 			return 'owner';
 		}
 
@@ -108,17 +111,6 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 				return typeof roleData === 'string' ? roleData : 'admin';
 			}
 		}
-
-		// 4. Vérifier dans (/admins/{uid}.json)
-		const adminCheckUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/admins/${firebaseUser.uid}.json${authParam}`;
-		const adminRes = await fetch(adminCheckUrl);
-		if (adminRes.ok) {
-			const adminData = await adminRes.json();
-			if (adminData === true || adminData?.admin === true || adminData === 'admin') {
-				return 'admin';
-			}
-		}
-
 	} catch (e) {
 		console.warn('Could not fetch role from Firebase:', e);
 	}

@@ -77,6 +77,7 @@
 	import ModelSelector from './ModelSelector.svelte';
 
 	import ToolServersModal from './ToolServersModal.svelte';
+	import SkillsModal from './SkillsModal.svelte';
 	import RobloxGameBuilderModal from './RobloxGameBuilderModal.svelte';
 	let showGameBuilderModal = false;
 
