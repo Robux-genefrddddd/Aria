@@ -3535,7 +3535,7 @@
 		const useChatVariablesFallback =
 			!_chatId || $temporaryChatEnabled || isTemporaryChatId(_chatId);
 
-		const res = await generateOpenAIChatCompletion(
+		const chatCompletionPromise = generateOpenAIChatCompletion(
 			localStorage.token,
 			{
 				stream: stream,
