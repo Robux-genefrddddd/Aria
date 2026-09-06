@@ -60,20 +60,20 @@
 
 	const DEFAULT_SUGGESTIONS = [
 		{
-			title: ['🎮 Concept Roblox Mega-Pro', 'Fusion de jeux tendance & GDD'],
-			content: 'Propose-moi une idée de jeu Roblox Mega-Pro inédite en combinant les meilleures mécaniques de Fisch, Blox Fruits et Rivals, avec la boucle de jeu, la rétention, la monétisation Robux et l\'architecture des scripts Luau.'
+			title: ['Concept Roblox Studio', 'Fusion de tendances et GDD'],
+			content: 'Propose-moi une idee de jeu Roblox ultra detaillee en combinant les meilleures mecaniques de Fisch, Blox Fruits et Rivals, avec la boucle de jeu, la retention, la monetisation Robux et l\'architecture des scripts Luau.'
 		},
 		{
-			title: ['🚀 Script Roblox Luau', 'Fly & Mouvement'],
-			content: 'Crée un script de Fly sécurisé en Luau pour Roblox Studio avec RemoteEvent et vérification serveur.'
+			title: ['Script Roblox Luau', 'Fly et Mouvement'],
+			content: 'Cree un script de Fly securise en Luau pour Roblox Studio avec RemoteEvent et verification serveur.'
 		},
 		{
-			title: ['🛒 Économie & Shop', 'Sauvegarde DataStore'],
-			content: 'Comment créer un système de boutique Roblox avec sauvegarde DataStore2 et protection contre le dupe ?'
+			title: ['Economie et Boutique', 'Sauvegarde DataStore'],
+			content: 'Comment creer un systeme de boutique Roblox avec sauvegarde DataStore et protection contre la duplication ?'
 		},
 		{
-			title: ['⚔️ Combat & Hitbox', 'Optimisation Raycast'],
-			content: 'Écris un système de combat Roblox optimisé avec Hitbox Raycast côté client et validation serveur.'
+			title: ['Combat et Hitbox', 'Optimisation Raycast'],
+			content: 'Ecris un systeme de combat Roblox optimise avec Hitbox Raycast cote client et validation serveur.'
 		}
 	];
 

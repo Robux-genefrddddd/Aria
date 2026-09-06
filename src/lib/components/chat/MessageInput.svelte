@@ -78,8 +78,6 @@
 
 	import ToolServersModal from './ToolServersModal.svelte';
 	import SkillsModal from './SkillsModal.svelte';
-	import RobloxGameBuilderModal from './RobloxGameBuilderModal.svelte';
-	let showGameBuilderModal = false;
 
 	import RichTextInput from '../common/RichTextInput.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
@@ -2274,19 +2272,6 @@
 										</button>
 									</InputMenu>
 
-									<Tooltip content="Générateur d'Idée Roblox Mega-Pro (Cahier des charges & GDD)" placement="top">
-										<button
-											type="button"
-											class="ml-1 px-2.5 py-1 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-full transition cursor-pointer shrink-0"
-											on:click={() => {
-												showGameBuilderModal = true;
-											}}
-										>
-											<span>🎮</span>
-											<span class="hidden sm:inline">Idée Roblox Pro</span>
-										</button>
-									</Tooltip>
-
 									{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
 										<div
 											class="flex self-center w-[0.0625rem] h-4 mx-1 bg-gray-200/50 dark:bg-gray-800/50 shrink-0"
@@ -2769,10 +2754,3 @@
 	</div>
 {/if}
 
-<RobloxGameBuilderModal
-	bind:show={showGameBuilderModal}
-	on:submit={(e) => {
-		prompt = e.detail;
-		dispatch('submit', e.detail);
-	}}
-/>

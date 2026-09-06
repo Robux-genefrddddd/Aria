@@ -592,11 +592,6 @@
 
 									const processStream = async () => {
 										while (true) {
-											// Mode anti-conso : abort if tab was hidden
-											if (window.__ariaAntiConsoStop) {
-												try { reader.cancel(); } catch {}
-												break;
-											}
 											// Read data chunks from the response stream
 											const { done, value } = await reader.read();
 											if (done) {
@@ -1084,17 +1079,11 @@
 			pageIsVisible = false;
 			pageWasHidden = true;
 			clearDisconnectToastTimer();
-			const antiConso = $settings?.ariaAntiConso ?? true;
-			if (antiConso) {
-				window.__ariaAntiConsoStop = true;
-				window.dispatchEvent(new Event('aria:anti-conso-stop'));
-			}
 		};
 
 		const handlePageVisible = () => {
 			pageIsVisible = true;
 			lastVisibleAt = Date.now();
-			window.__ariaAntiConsoStop = false;
 
 			isLastActiveTab.set(true); // This tab is now the active tab
 			try {

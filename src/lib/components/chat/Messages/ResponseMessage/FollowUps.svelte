@@ -10,7 +10,6 @@
 
 <div class="mt-3.5 pt-2">
 	<div class="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-		<span class="text-amber-500">⚡</span>
 		<span>Choisis une option ou réponds directement :</span>
 	</div>
 
@@ -21,7 +20,6 @@
 				on:click={() => onClick(followUp)}
 				type="button"
 			>
-				<span class="text-gray-400 group-hover:text-amber-500 transition text-[0.7rem]">👉</span>
 				<span class="break-words line-clamp-2">{followUp}</span>
 			</button>
 		{/each}
