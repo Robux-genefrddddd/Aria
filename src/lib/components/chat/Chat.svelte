@@ -3632,6 +3632,23 @@
 					if (charIndex >= fullContent.length) {
 						clearInterval(timer);
 						responseMessage.done = true;
+
+						// Extract [[quick reply]] options from AI response to create clickable followUps
+						const quickReplyRegex = /\[\[([^\]]{2,120})\]\]/g;
+						const quickReplies: string[] = [];
+						let qrMatch;
+						while ((qrMatch = quickReplyRegex.exec(fullContent)) !== null) {
+							const option = qrMatch[1].trim();
+							if (option && !quickReplies.includes(option)) {
+								quickReplies.push(option);
+							}
+						}
+						if (quickReplies.length > 0) {
+							responseMessage.followUps = quickReplies;
+							// Strip the [[...]] markers from displayed content for cleanliness
+							responseMessage.content = fullContent.replace(/\[\[([^\]]{2,120})\]\]/g, '**$1**');
+						}
+
 						history.messages[responseMessageId] = responseMessage;
 						history = history;
 

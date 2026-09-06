@@ -60,6 +60,10 @@
 
 	const DEFAULT_SUGGESTIONS = [
 		{
+			title: ['🎮 Concept Roblox Mega-Pro', 'Fusion de jeux tendance & GDD'],
+			content: 'Propose-moi une idée de jeu Roblox Mega-Pro inédite en combinant les meilleures mécaniques de Fisch, Blox Fruits et Rivals, avec la boucle de jeu, la rétention, la monétisation Robux et l\'architecture des scripts Luau.'
+		},
+		{
 			title: ['🚀 Script Roblox Luau', 'Fly & Mouvement'],
 			content: 'Crée un script de Fly sécurisé en Luau pour Roblox Studio avec RemoteEvent et vérification serveur.'
 		},
@@ -70,10 +74,6 @@
 		{
 			title: ['⚔️ Combat & Hitbox', 'Optimisation Raycast'],
 			content: 'Écris un système de combat Roblox optimisé avec Hitbox Raycast côté client et validation serveur.'
-		},
-		{
-			title: ['🎨 Interface UI', 'TweenService Animations'],
-			content: 'Crée un script d\'animation d\'interface UI Roblox moderne et fluide avec TweenService.'
 		}
 	];
 
