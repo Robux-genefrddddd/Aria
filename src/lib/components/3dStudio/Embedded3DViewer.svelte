@@ -4,10 +4,12 @@
 	import { toast } from 'svelte-sonner';
 	import type { Model3DPart, ShadingMode, Model3DStats } from '$lib/services/3d/types';
 	import { parseBlenderScript, calculateModelStats } from '$lib/services/3d/virtualBlenderEngine';
+	import { getSemanticFallbackParts } from '$lib/services/3d/archetypeParts';
 	import { exportToGLB, exportToOBJ } from '$lib/services/3d/exporters';
 	import Studio3DViewport from './Studio3DViewport.svelte';
 
 	export let code: string = '';
+	export let modelUrl: string | null = null;
 	export let title: string = 'Modèle 3D Low-Poly';
 	export let parts: Model3DPart[] = [];
 	export let height: string = '380px';
@@ -20,11 +22,32 @@
 	let viewportComponent: Studio3DViewport;
 	let isExporting = false;
 
+	// Détection automatique d'une URL .glb dans le code ou les liens
+	$: if (!modelUrl && code && code.includes('.glb')) {
+		const glbMatch = code.match(/https?:\/\/[^\s"'<>]+\.glb[^\s"'<>]*/i);
+		if (glbMatch) {
+			modelUrl = glbMatch[0];
+		}
+	}
+
 	// Extraire le titre depuis le code si possible
 	$: if (code) {
-		const titleMatch = code.match(/Modèle\s*:\s*(.+)/i) || code.match(/title["']?\s*:\s*["']([^"']+)["']/i);
+		const lower = code.toLowerCase();
+		const titleMatch = code.match(/Modèle\s*:\s*([^\n\r]+)/i) || code.match(/title["']?\s*:\s*["']([^"']+)["']/i);
 		if (titleMatch && titleMatch[1]) {
 			title = titleMatch[1].trim();
+		} else if (lower.includes('épée') || lower.includes('epee') || lower.includes('sword') || lower.includes('lame')) {
+			title = 'Épée Royale Low-Poly';
+		} else if (lower.includes('voiture') || lower.includes('car') || lower.includes('véhicule')) {
+			title = 'Cyber Cruiser Low-Poly';
+		} else if (lower.includes('maison') || lower.includes('house') || lower.includes('auberge')) {
+			title = 'Auberge Médiévale Low-Poly';
+		} else if (lower.includes('arbre') || lower.includes('tree')) {
+			title = 'Arbre Stylisé Low-Poly';
+		} else if (lower.includes('vaisseau') || lower.includes('ship')) {
+			title = 'Chasseur Stellaire Low-Poly';
+		} else if (lower.includes('coffre') || lower.includes('chest')) {
+			title = 'Coffre RPG Low-Poly';
 		}
 	}
 
@@ -32,12 +55,27 @@
 		if (parts && parts.length > 0) {
 			internalParts = parts;
 		} else if (code) {
-			internalParts = parseBlenderScript(code);
+			const parsed = parseBlenderScript(code);
+			internalParts = parsed.length > 0 ? parsed : getSemanticFallbackParts(code + ' ' + title);
+		} else {
+			internalParts = getSemanticFallbackParts(title);
 		}
-		stats = calculateModelStats(internalParts);
+		if (!modelUrl) {
+			stats = calculateModelStats(internalParts);
+		}
 	}
 
 	const handleDownloadGLB = async () => {
+		if (modelUrl) {
+			const a = document.createElement('a');
+			a.href = modelUrl;
+			a.download = `${title.toLowerCase().replace(/[^a-z0-9_]/g, '_')}.glb`;
+			a.target = '_blank';
+			a.click();
+			toast.success('Téléchargement du fichier .GLB en cours !');
+			return;
+		}
+
 		const obj3d = viewportComponent?.get3DObject();
 		if (!obj3d) {
 			toast.error('Génération 3D en cours...');
@@ -64,7 +102,8 @@
 	};
 
 	const handleOpenInStudio = () => {
-		goto(`/workspace/3d-studio?code=${encodeURIComponent(code)}`);
+		const param = modelUrl ? `model=${encodeURIComponent(modelUrl)}` : `code=${encodeURIComponent(code)}`;
+		goto(`/workspace/3d-studio?${param}`);
 	};
 </script>
 
@@ -126,11 +165,12 @@
 		<Studio3DViewport
 			bind:this={viewportComponent}
 			parts={internalParts}
+			{modelUrl}
 			bind:shadingMode
 			lightingPreset="studio"
 			showGrid={true}
 			autoRotate={true}
-			{stats}
+			bind:stats
 		/>
 	</div>
 
@@ -140,7 +180,7 @@
 			<span>💡 <em>Faites glisser la souris pour inspecter à 360°, molette pour zoomer.</em></span>
 		</div>
 
-		{#if showCodeToggle}
+		{#if showCodeToggle && code}
 			<button
 				type="button"
 				on:click={() => (showRawCode = !showRawCode)}

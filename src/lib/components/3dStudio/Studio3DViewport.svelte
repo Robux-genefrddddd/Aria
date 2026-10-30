@@ -2,10 +2,13 @@
 	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 	import * as THREE from 'three';
 	import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+	import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 	import type { Model3DPart, ShadingMode, CameraPreset, LightingPreset, Model3DStats } from '$lib/services/3d/types';
 	import { buildSceneGroup, calculateModelStats } from '$lib/services/3d/virtualBlenderEngine';
+	import { getSemanticFallbackParts } from '$lib/services/3d/archetypeParts';
 
 	export let parts: Model3DPart[] = [];
+	export let modelUrl: string | null = null;
 	export let shadingMode: ShadingMode = 'flat';
 	export let lightingPreset: LightingPreset = 'studio';
 	export let showGrid = true;
@@ -14,6 +17,7 @@
 
 	const dispatch = createEventDispatcher<{
 		partSelected: Model3DPart | null;
+		modelLoaded: { triangles: number; partsCount: number };
 	}>();
 
 	let container: HTMLDivElement;
@@ -33,11 +37,20 @@
 	let fillLight: THREE.DirectionalLight;
 
 	let isHovering = false;
+	let isLoadingModel = false;
+	let loadError: string | null = null;
 
 	// Initialisation Three.js
 	onMount(() => {
 		initScene();
-		updateModel(parts, shadingMode);
+
+		if (modelUrl) {
+			loadGLBModel(modelUrl);
+		} else {
+			const effectiveParts = parts.length > 0 ? parts : getSemanticFallbackParts('sword');
+			updateModel(effectiveParts, shadingMode);
+		}
+
 		applyLighting(lightingPreset);
 		window.addEventListener('resize', handleResize);
 
@@ -48,12 +61,17 @@
 		};
 	});
 
-	$: if (parts && scene) {
-		updateModel(parts, shadingMode);
+	$: if (modelUrl && scene) {
+		loadGLBModel(modelUrl);
+	}
+
+	$: if (!modelUrl && parts && scene) {
+		const effectiveParts = parts.length > 0 ? parts : getSemanticFallbackParts('sword');
+		updateModel(effectiveParts, shadingMode);
 	}
 
 	$: if (shadingMode && scene) {
-		updateModel(parts, shadingMode);
+		applyShadingMode(shadingMode);
 	}
 
 	$: if (lightingPreset && scene) {
@@ -101,8 +119,8 @@
 		controls = new OrbitControls(camera, renderer.domElement);
 		controls.enableDamping = true;
 		controls.dampingFactor = 0.05;
-		controls.maxDistance = 30;
-		controls.minDistance = 1;
+		controls.maxDistance = 35;
+		controls.minDistance = 0.8;
 		controls.target.set(0, 1.2, 0);
 
 		// 5. Lumières du studio
@@ -137,34 +155,146 @@
 		animate();
 	}
 
+	function cleanCurrentModel() {
+		if (!scene || !modelGroup) return;
+		scene.remove(modelGroup);
+		modelGroup.traverse((child) => {
+			if (child instanceof THREE.Mesh) {
+				child.geometry?.dispose();
+				if (Array.isArray(child.material)) {
+					child.material.forEach((m) => m?.dispose());
+				} else if (child.material) {
+					child.material.dispose();
+				}
+			}
+		});
+		modelGroup = null;
+	}
+
+	function loadGLBModel(url: string) {
+		if (!scene) return;
+		isLoadingModel = true;
+		loadError = null;
+
+		const loader = new GLTFLoader();
+		loader.load(
+			url,
+			(gltf) => {
+				cleanCurrentModel();
+				modelGroup = gltf.scene;
+
+				let totalTriangles = 0;
+				let meshCount = 0;
+
+				modelGroup.traverse((child) => {
+					if (child instanceof THREE.Mesh) {
+						meshCount++;
+						child.castShadow = true;
+						child.receiveShadow = true;
+						if (child.geometry) {
+							const index = child.geometry.index;
+							const position = child.geometry.attributes.position;
+							if (index) {
+								totalTriangles += index.count / 3;
+							} else if (position) {
+								totalTriangles += position.count / 3;
+							}
+						}
+					}
+				});
+
+				scene.add(modelGroup);
+
+				// Centrage automatique et calcul de caméra
+				const box = new THREE.Box3().setFromObject(modelGroup);
+				const center = box.getCenter(new THREE.Vector3());
+				const size = box.getSize(new THREE.Vector3());
+				const maxDim = Math.max(size.x, size.y, size.z, 1.5);
+
+				// Centrer le modèle sur le sol (Y = 0)
+				modelGroup.position.sub(center);
+				modelGroup.position.y += size.y / 2;
+
+				if (controls) {
+					controls.target.set(0, size.y / 2, 0);
+				}
+				if (camera) {
+					const dist = maxDim * 2.2;
+					camera.position.set(dist * 0.8, size.y / 2 + dist * 0.5, dist * 0.9);
+					camera.lookAt(0, size.y / 2, 0);
+					controls?.update();
+				}
+
+				stats = {
+					triangles: Math.round(totalTriangles),
+					vertices: Math.round(totalTriangles * 1.5),
+					partsCount: meshCount,
+					isRobloxOptimized: totalTriangles <= 10000,
+					estimatedFileSizeKb: Math.round(totalTriangles * 0.05 + 50)
+				};
+
+				dispatch('modelLoaded', {
+					triangles: stats.triangles,
+					partsCount: meshCount
+				});
+
+				isLoadingModel = false;
+			},
+			undefined,
+			(err) => {
+				console.error('Erreur chargement GLB:', err);
+				loadError = 'Impossible de charger le fichier .GLB en direct.';
+				isLoadingModel = false;
+				// Fallback sur le modèle procédural
+				const fallbackParts = parts.length > 0 ? parts : getSemanticFallbackParts('sword');
+				updateModel(fallbackParts, shadingMode);
+			}
+		);
+	}
+
 	function updateModel(currentParts: Model3DPart[], mode: ShadingMode) {
 		if (!scene) return;
-
-		// Supprimer l'ancien modèle
-		if (modelGroup) {
-			scene.remove(modelGroup);
-			modelGroup.traverse((child) => {
-				if (child instanceof THREE.Mesh) {
-					child.geometry.dispose();
-					if (Array.isArray(child.material)) {
-						child.material.forEach((m) => m.dispose());
-					} else {
-						child.material.dispose();
-					}
-				}
-			});
-		}
+		cleanCurrentModel();
 
 		// Reconstruire le groupe
 		modelGroup = buildSceneGroup(currentParts, mode);
 		scene.add(modelGroup);
 
-		// Centrer le pivot de contrôle
+		// Centrer et ajuster la caméra sur le modèle
 		const box = new THREE.Box3().setFromObject(modelGroup);
 		const center = box.getCenter(new THREE.Vector3());
+		const size = box.getSize(new THREE.Vector3());
+		const maxDim = Math.max(size.x, size.y, size.z, 2);
+
 		if (controls) {
 			controls.target.copy(center);
 		}
+		if (camera && currentParts.length > 0) {
+			const dist = maxDim * 2.0;
+			camera.position.set(center.x + dist * 0.8, center.y + dist * 0.6, center.z + dist * 0.9);
+			camera.lookAt(center);
+			controls?.update();
+		}
+
+		stats = calculateModelStats(currentParts);
+	}
+
+	function applyShadingMode(mode: ShadingMode) {
+		if (!modelGroup) return;
+		modelGroup.traverse((child) => {
+			if (child instanceof THREE.Mesh && child.material) {
+				const mats = Array.isArray(child.material) ? child.material : [child.material];
+				mats.forEach((m) => {
+					if (m) {
+						m.wireframe = mode === 'wireframe';
+						if (mode === 'clay') {
+							m.color = new THREE.Color(0xcccccc);
+							m.roughness = 0.9;
+						}
+					}
+				});
+			}
+		});
 	}
 
 	function applyLighting(preset: LightingPreset) {
@@ -269,15 +399,25 @@
 >
 	<canvas bind:this={canvas} class="w-full h-full block cursor-grab active:cursor-grabbing outline-none"></canvas>
 
+	<!-- Spinner de chargement du modèle GLB -->
+	{#if isLoadingModel}
+		<div class="absolute inset-0 bg-neutral-950/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-20 pointer-events-none">
+			<div class="size-9 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+			<p class="text-xs text-neutral-300 font-medium">Chargement du modèle 3D .GLB...</p>
+		</div>
+	{/if}
+
 	<!-- Badge Flottant HUD Polycount & Limite Roblox Studio -->
 	<div class="absolute top-3 left-3 flex flex-wrap items-center gap-2 pointer-events-none z-10">
 		<div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-900/80 backdrop-blur-md border border-neutral-700/60 text-xs font-medium text-neutral-200 shadow-lg">
-			<span class="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
+			<span class="size-2 rounded-full {stats?.isRobloxOptimized !== false ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse"></span>
 			<span>{stats?.triangles ?? 0} tris</span>
 			<span class="text-neutral-500">•</span>
-			<span>{parts.length} pièces</span>
+			<span>{stats?.partsCount ?? parts.length} pièces</span>
 			<span class="text-neutral-500">•</span>
-			<span class="text-emerald-400 font-semibold">Roblox OK (&lt; 10k)</span>
+			<span class="{stats?.isRobloxOptimized !== false ? 'text-emerald-400' : 'text-amber-400'} font-semibold">
+				{stats?.isRobloxOptimized !== false ? 'Roblox OK (< 10k)' : 'Haute Définition'}
+			</span>
 		</div>
 	</div>
 
@@ -326,7 +466,7 @@
 				on:click={() => (shadingMode = 'flat')}
 				class="px-2.5 py-1 text-xs rounded-xl font-medium transition {shadingMode === 'flat' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm' : 'text-neutral-400 hover:text-white'}"
 			>
-				Low-Poly Flat
+				Rendu Complet
 			</button>
 			<button
 				type="button"

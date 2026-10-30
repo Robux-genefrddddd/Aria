@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import type { Model3DPart, Model3DProject, Model3DStats, ShadingMode } from './types';
+import type { Model3DPart, ShadingMode, Model3DStats } from './types';
+import { getSemanticFallbackParts } from './archetypeParts';
 
 /**
  * Moteur Virtuel Blender pour Aria 3D Studio.
@@ -13,24 +14,14 @@ function createWedgeGeometry(width = 1, height = 1, depth = 1): THREE.BufferGeom
 	const h = height / 2;
 	const d = depth / 2;
 
-	// 5 faces : base, dos, pente, 2 côtés triangulaires
 	const vertices = new Float32Array([
-		// Face arrière (rectangle vertical)
 		-w, -h, -d,   w, -h, -d,   w,  h, -d,
 		-w, -h, -d,   w,  h, -d,  -w,  h, -d,
-
-		// Base inférieure (rectangle horizontal)
 		-w, -h, -d,   w, -h,  d,   w, -h, -d,
 		-w, -h, -d,  -w, -h,  d,   w, -h,  d,
-
-		// Face inclinée / Pente
 		-w,  h, -d,   w,  h, -d,   w, -h,  d,
 		-w,  h, -d,   w, -h,  d,  -w, -h,  d,
-
-		// Côté gauche (triangle)
 		-w, -h, -d,  -w,  h, -d,  -w, -h,  d,
-
-		// Côté droit (triangle)
 		 w, -h, -d,   w, -h,  d,   w,  h, -d
 	]);
 
@@ -51,7 +42,6 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 			geometry = new THREE.BoxGeometry(1, 1, 1);
 			break;
 		case 'cylinder':
-			// 10-12 segments pour un rendu low-poly facetté ultra net
 			geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 10);
 			break;
 		case 'cone':
@@ -61,7 +51,6 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 			geometry = new THREE.ConeGeometry(0.7, 1, 4);
 			break;
 		case 'sphere':
-			// Icosaèdre pour les sphères facettées stylisées low-poly
 			geometry = new THREE.IcosahedronGeometry(0.5, 1);
 			break;
 		case 'torus':
@@ -75,7 +64,6 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 	}
 
 	let material: THREE.Material;
-
 	const baseColor = new THREE.Color(part.color || '#888888');
 
 	if (mode === 'wireframe') {
@@ -91,7 +79,6 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 			flatShading: true
 		});
 	} else if (mode === 'roblox') {
-		// Style Roblox plastique saturé / néon si spécifié
 		material = new THREE.MeshStandardMaterial({
 			color: baseColor,
 			roughness: 0.25,
@@ -101,7 +88,6 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 			emissiveIntensity: part.emissiveIntensity ?? 0.3
 		});
 	} else {
-		// Rendu Flat Shading Low-Poly Signature
 		material = new THREE.MeshStandardMaterial({
 			color: baseColor,
 			roughness: part.roughness ?? 0.55,
@@ -117,10 +103,8 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 	mesh.castShadow = true;
 	mesh.receiveShadow = true;
 
-	// Positions
 	mesh.position.set(part.location[0], part.location[1], part.location[2]);
 
-	// Rotations (conversion degrés -> radians)
 	const degToRad = Math.PI / 180;
 	mesh.rotation.set(
 		part.rotation[0] * degToRad,
@@ -128,13 +112,9 @@ export function createPartMesh(part: Model3DPart, mode: ShadingMode = 'flat'): T
 		part.rotation[2] * degToRad
 	);
 
-	// Échelles
 	mesh.scale.set(part.scale[0], part.scale[1], part.scale[2]);
-
-	// Visibilité
 	mesh.visible = part.visible !== false;
 
-	// Stocker les métadonnées sur l'objet Three.js
 	mesh.userData = {
 		partId: part.id,
 		partName: part.name,
@@ -177,23 +157,23 @@ export function calculateModelStats(parts: Model3DPart[]): Model3DStats {
 				verts = 8;
 				break;
 			case 'cylinder':
-				tris = 10 * 4; // 10 segments * (2 côtés + 2 bouchons) = ~40 tris
+				tris = 40;
 				verts = 22;
 				break;
 			case 'cone':
-				tris = 8 * 2; // ~16 tris
+				tris = 16;
 				verts = 10;
 				break;
 			case 'pyramid':
-				tris = 4 * 2; // ~8 tris
+				tris = 8;
 				verts = 5;
 				break;
 			case 'sphere':
-				tris = 80; // Icosaèdre subd 1
+				tris = 80;
 				verts = 42;
 				break;
 			case 'torus':
-				tris = 6 * 12 * 2; // ~144 tris
+				tris = 144;
 				verts = 72;
 				break;
 			case 'wedge':
@@ -209,7 +189,6 @@ export function calculateModelStats(parts: Model3DPart[]): Model3DStats {
 		totalVertices += verts;
 	}
 
-	// Limite Roblox MeshPart = 10 000 triangles max par mesh
 	const robloxCompatible = totalTriangles <= 10000;
 	const estimatedMemoryKb = Math.round((totalVertices * 32 + totalTriangles * 12) / 1024);
 
@@ -223,200 +202,167 @@ export function calculateModelStats(parts: Model3DPart[]): Model3DStats {
 }
 
 /**
- * Convertit un vecteur RGB (0.0 - 1.0) Blender en code HEX standard (#RRGGBB).
- */
-function rgbToHex(r: number, g: number, b: number): string {
-	const toHex = (c: number) => {
-		const clamped = Math.max(0, Math.min(255, Math.round(c * 255)));
-		return clamped.toString(16).padStart(2, '0');
-	};
-	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
-/**
- * Analyseur syntaxique de scripts Python Blender (`bpy`).
- * Reconstitue les formes 3D, positions, rotations, échelles et couleurs.
+ * Analyseur syntaxique robuste de scripts Python Blender (`bpy`).
+ * Supporte les définitions multi-lignes, les dictionnaires et le fallback intelligent.
  */
 export function parseBlenderScript(code: string): Model3DPart[] {
-	const parts: Model3DPart[] = [];
-	const lines = code.split('\n');
-
-	let currentPart: Partial<Model3DPart> | null = null;
-	let currentPartIndex = 1;
-
-	// Palette de secours pour les pièces sans couleur définie
-	const fallbackColors = ['#4A90E2', '#50E3C2', '#F5A623', '#D0021B', '#9013FE', '#B8E986'];
-
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i].trim();
-
-		// Détection de primitive_cube_add, cylinder_add, etc.
-		const cubeMatch = line.match(/bpy\.ops\.mesh\.primitive_cube_add\((.*?)\)/);
-		const cylMatch = line.match(/bpy\.ops\.mesh\.primitive_cylinder_add\((.*?)\)/);
-		const coneMatch = line.match(/bpy\.ops\.mesh\.primitive_cone_add\((.*?)\)/);
-		const sphereMatch = line.match(/bpy\.ops\.mesh\.primitive_uv_sphere_add\((.*?)\)/) || line.match(/primitive_ico_sphere_add\((.*?)\)/);
-		const torusMatch = line.match(/bpy\.ops\.mesh\.primitive_torus_add\((.*?)\)/);
-
-		if (cubeMatch || cylMatch || coneMatch || sphereMatch || torusMatch) {
-			if (currentPart && currentPart.name) {
-				parts.push(finalizePart(currentPart, currentPartIndex++));
-			}
-
-			let type: Model3DPart['type'] = 'cube';
-			let paramsStr = '';
-
-			if (cubeMatch) {
-				type = 'cube';
-				paramsStr = cubeMatch[1];
-			} else if (cylMatch) {
-				type = 'cylinder';
-				paramsStr = cylMatch[1];
-			} else if (coneMatch) {
-				type = 'cone';
-				paramsStr = coneMatch[1];
-			} else if (sphereMatch) {
-				type = 'sphere';
-				paramsStr = sphereMatch[1];
-			} else if (torusMatch) {
-				type = 'torus';
-				paramsStr = torusMatch[1];
-			}
-
-			currentPart = {
-				id: `part_${Date.now()}_${currentPartIndex}`,
-				name: `Part_${type}_${currentPartIndex}`,
-				type,
-				location: [0, 0, 0],
-				rotation: [0, 0, 0],
-				scale: [1, 1, 1],
-				color: fallbackColors[(currentPartIndex - 1) % fallbackColors.length],
-				roughness: 0.5,
-				metalness: 0.1,
-				visible: true
-			};
-
-			// Extraction des paramètres inline comme location=(x, y, z)
-			const locInline = paramsStr.match(/location\s*=\s*\(([^)]+)\)/);
-			if (locInline) {
-				const coords = locInline[1].split(',').map((n) => parseFloat(n.trim()) || 0);
-				if (coords.length >= 3) currentPart.location = [coords[0], coords[2], -coords[1]]; // Blender Z-up to Three.js Y-up
-			}
-
-			const rotInline = paramsStr.match(/rotation\s*=\s*\(([^)]+)\)/);
-			if (rotInline) {
-				const rads = rotInline[1].split(',').map((n) => parseFloat(n.trim()) || 0);
-				if (rads.length >= 3) {
-					const toDeg = 180 / Math.PI;
-					currentPart.rotation = [rads[0] * toDeg, rads[2] * toDeg, -rads[1] * toDeg];
-				}
-			}
-
-			const scaleInline = paramsStr.match(/scale\s*=\s*\(([^)]+)\)/);
-			if (scaleInline) {
-				const sc = scaleInline[1].split(',').map((n) => parseFloat(n.trim()) || 1);
-				if (sc.length >= 3) currentPart.scale = [sc[0], sc[2], sc[1]];
-			}
-
-			continue;
-		}
-
-		if (!currentPart) continue;
-
-		// Détection du nom : obj.name = "Blade" ou active_object.name = "Roof"
-		const nameMatch = line.match(/\.name\s*=\s*["']([^"']+)["']/);
-		if (nameMatch) {
-			currentPart.name = nameMatch[1];
-			// Spécial : si le nom contient "wedge" ou "slope", assigner le type wedge
-			if (currentPart.name.toLowerCase().includes('wedge') || currentPart.name.toLowerCase().includes('pente')) {
-				currentPart.type = 'wedge';
-			} else if (currentPart.name.toLowerCase().includes('pyramid')) {
-				currentPart.type = 'pyramid';
-			}
-		}
-
-		// Détection de la position : location = (x, y, z) ou obj.location.x = ...
-		const locMatch = line.match(/\.location\s*=\s*\(([^)]+)\)/);
-		if (locMatch) {
-			const coords = locMatch[1].split(',').map((n) => parseFloat(n.trim()) || 0);
-			if (coords.length >= 3) {
-				// Blender (X, Y, Z Z-up) -> Three.js (X, Z, -Y Y-up)
-				currentPart.location = [coords[0], coords[2], -coords[1]];
-			}
-		}
-
-		// Détection de la rotation : rotation_euler = (rx, ry, rz)
-		const rotMatch = line.match(/\.rotation_euler\s*=\s*\(([^)]+)\)/);
-		if (rotMatch) {
-			const rads = rotMatch[1].split(',').map((n) => parseFloat(n.trim()) || 0);
-			if (rads.length >= 3) {
-				const toDeg = 180 / Math.PI;
-				currentPart.rotation = [rads[0] * toDeg, rads[2] * toDeg, -rads[1] * toDeg];
-			}
-		}
-
-		// Détection de l'échelle : scale = (sx, sy, sz)
-		const scaleMatch = line.match(/\.scale\s*=\s*\(([^)]+)\)/);
-		if (scaleMatch) {
-			const sc = scaleMatch[1].split(',').map((n) => parseFloat(n.trim()) || 1);
-			if (sc.length >= 3) {
-				currentPart.scale = [Math.abs(sc[0]), Math.abs(sc[2]), Math.abs(sc[1])];
-			}
-		}
-
-		// Détection des couleurs : inputs['Base Color'].default_value = (r, g, b, 1.0)
-		const colorMatch = line.match(/default_value\s*=\s*\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/) ||
-			line.match(/diffuse_color\s*=\s*\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/);
-
-		if (colorMatch) {
-			const r = parseFloat(colorMatch[1]);
-			const g = parseFloat(colorMatch[2]);
-			const b = parseFloat(colorMatch[3]);
-			currentPart.color = rgbToHex(r, g, b);
-		}
-
-		// Détection de couleur Hex éventuelle : #RRGGBB dans un commentaire ou chaîne
-		const hexMatch = line.match(/(#[0-9A-Fa-f]{6})/);
-		if (hexMatch) {
-			currentPart.color = hexMatch[1];
-		}
-
-		// Détection de roughness / metalness
-		if (line.includes('Metallic') || line.includes('metallic')) {
-			const m = line.match(/default_value\s*=\s*([\d.]+)/);
-			if (m) currentPart.metalness = parseFloat(m[1]);
-		}
-		if (line.includes('Roughness') || line.includes('roughness')) {
-			const m = line.match(/default_value\s*=\s*([\d.]+)/);
-			if (m) currentPart.roughness = parseFloat(m[1]);
-		}
-		if (line.includes('Emission') || line.includes('emissive')) {
-			currentPart.emissive = currentPart.color;
-			currentPart.emissiveIntensity = 0.5;
-		}
+	if (!code || !code.trim()) {
+		return getSemanticFallbackParts('sword');
 	}
 
-	if (currentPart && currentPart.name) {
-		parts.push(finalizePart(currentPart, currentPartIndex++));
+	// 1. Tenter d'extraire d'abord un manifeste JSON s'il est présent
+	const jsonMatch = code.match(/```(?:json:3d_manifest|json:3d|json)\s*([\s\S]*?)```/);
+	if (jsonMatch) {
+		try {
+			const data = JSON.parse(jsonMatch[1].trim());
+			if (data.parts && Array.isArray(data.parts) && data.parts.length > 0) {
+				return data.parts.map((p: any, idx: number) => ({
+					id: `part_${Date.now()}_${idx + 1}`,
+					name: p.name || `Piece_${idx + 1}`,
+					type: p.type || 'cube',
+					location: p.location || [0, 0, 0],
+					rotation: p.rotation || [0, 0, 0],
+					scale: p.scale || [1, 1, 1],
+					color: p.color || '#4A90E2',
+					roughness: p.roughness ?? 0.5,
+					metalness: p.metalness ?? 0.1,
+					visible: true
+				}));
+			}
+		} catch (e) {}
+	}
+
+	const parts: Model3DPart[] = [];
+	const fallbackColors = ['#B0C4DE', '#FFD700', '#5C3826', '#E50914', '#00E5FF', '#2ED573', '#FF7675', '#A29BFE'];
+
+	// 2. Recherche multi-lignes de toutes les primitives Blender : primitive_*_add(...)
+	const primRegex = /bpy\.ops\.mesh\.primitive_([a-zA-Z0-9_]+)_add\s*\(([\s\S]*?)\)/gi;
+	const matches: Array<{ type: string; args: string; startIndex: number; endIndex: number }> = [];
+
+	let match: RegExpExecArray | null;
+	while ((match = primRegex.exec(code)) !== null) {
+		matches.push({
+			type: match[1],
+			args: match[2],
+			startIndex: match.index,
+			endIndex: primRegex.lastIndex
+		});
+	}
+
+	for (let i = 0; i < matches.length; i++) {
+		const m = matches[i];
+		const nextStart = i + 1 < matches.length ? matches[i + 1].startIndex : code.length;
+		const trailingBlock = code.slice(m.endIndex, nextStart);
+		const fullBlock = m.args + '\n' + trailingBlock;
+
+		let partType: Model3DPart['type'] = 'cube';
+		const rawType = m.type.toLowerCase();
+		if (rawType.includes('cyl')) partType = 'cylinder';
+		else if (rawType.includes('cone')) partType = 'cone';
+		else if (rawType.includes('sphere')) partType = 'sphere';
+		else if (rawType.includes('torus')) partType = 'torus';
+		else if (rawType.includes('wedge')) partType = 'wedge';
+		else if (rawType.includes('pyramid')) partType = 'pyramid';
+
+		// Nom
+		let name = `Piece_${i + 1}`;
+		const nameMatch = trailingBlock.match(/\.name\s*=\s*["']([^"']+)["']/);
+		if (nameMatch) {
+			name = nameMatch[1];
+			if (name.toLowerCase().includes('wedge')) partType = 'wedge';
+			if (name.toLowerCase().includes('pyramid')) partType = 'pyramid';
+		}
+
+		// Position (location)
+		let location: [number, number, number] = [0, 0, 0];
+		const locMatch = fullBlock.match(/location\s*=\s*\(\s*([-\d.e]+)\s*,\s*([-\d.e]+)\s*,\s*([-\d.e]+)\s*\)/i);
+		if (locMatch) {
+			const bx = parseFloat(locMatch[1]) || 0;
+			const by = parseFloat(locMatch[2]) || 0;
+			const bz = parseFloat(locMatch[3]) || 0;
+
+			// Blender (X, Y, Z Z-up) -> Three.js (X, Y, Z Y-up)
+			if (bz !== 0) {
+				location = [bx, bz, -by];
+			} else {
+				location = [bx, by, bz];
+			}
+		}
+
+		// Rotation (rotation_euler)
+		let rotation: [number, number, number] = [0, 0, 0];
+		const rotMatch = fullBlock.match(/rotation(?:_euler)?\s*=\s*\(\s*([-\d.e]+)\s*,\s*([-\d.e]+)\s*,\s*([-\d.e]+)\s*\)/i);
+		if (rotMatch) {
+			const rx = parseFloat(rotMatch[1]) || 0;
+			const ry = parseFloat(rotMatch[2]) || 0;
+			const rz = parseFloat(rotMatch[3]) || 0;
+			const toDeg = 180 / Math.PI;
+			rotation = [rx * toDeg, rz * toDeg, -ry * toDeg];
+		}
+
+		// Échelle (scale)
+		let scale: [number, number, number] = [1, 1, 1];
+		const scaleMatch = fullBlock.match(/scale\s*=\s*\(\s*([-\d.e]+)\s*,\s*([-\d.e]+)\s*,\s*([-\d.e]+)\s*\)/i);
+		if (scaleMatch) {
+			const sx = Math.abs(parseFloat(scaleMatch[1]) || 1);
+			const sy = Math.abs(parseFloat(scaleMatch[2]) || 1);
+			const sz = Math.abs(parseFloat(scaleMatch[3]) || 1);
+			scale = [sx, sz, sy];
+		} else {
+			const sizeMatch = m.args.match(/size\s*=\s*([-\d.e]+)/i);
+			const radMatch = m.args.match(/radius(?:1)?\s*=\s*([-\d.e]+)/i);
+			const depthMatch = m.args.match(/depth\s*=\s*([-\d.e]+)/i);
+			if (sizeMatch) {
+				const s = parseFloat(sizeMatch[1]) || 1;
+				scale = [s, s, s];
+			} else if (radMatch || depthMatch) {
+				const r = (radMatch ? parseFloat(radMatch[1]) * 2 : 1) || 1;
+				const d = (depthMatch ? parseFloat(depthMatch[1]) : 1) || 1;
+				scale = [r, d, r];
+			}
+		}
+
+		// Couleur
+		let color = fallbackColors[i % fallbackColors.length];
+		const colorMatch =
+			fullBlock.match(/default_value\s*=\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i) ||
+			fullBlock.match(/diffuse_color\s*=\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i);
+
+		if (colorMatch) {
+			const r = Math.round(parseFloat(colorMatch[1]) * 255);
+			const g = Math.round(parseFloat(colorMatch[2]) * 255);
+			const b = Math.round(parseFloat(colorMatch[3]) * 255);
+			const toHex = (c: number) => Math.max(0, Math.min(255, c)).toString(16).padStart(2, '0');
+			color = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+		}
+
+		const hexMatch = fullBlock.match(/(#[0-9A-Fa-f]{6})/);
+		if (hexMatch) {
+			color = hexMatch[1];
+		}
+
+		parts.push({
+			id: `part_${Date.now()}_${i + 1}`,
+			name,
+			type: partType,
+			location,
+			rotation,
+			scale,
+			color,
+			roughness: 0.5,
+			metalness: 0.1,
+			visible: true
+		});
+	}
+
+	// 3. Filet de sécurité absolu : Si 0 pièces ont pu être extraites de la syntaxe,
+	// activer le fallback sémantique pour que la scène 3D ne soit JAMAIS vide !
+	if (parts.length === 0) {
+		console.warn('Aria 3D: Fallback sémantique activé pour le script');
+		return getSemanticFallbackParts(code);
 	}
 
 	return parts;
-}
-
-function finalizePart(raw: Partial<Model3DPart>, index: number): Model3DPart {
-	return {
-		id: raw.id || `part_${Date.now()}_${index}`,
-		name: raw.name || `Piece_${index}`,
-		type: raw.type || 'cube',
-		location: raw.location || [0, 0, 0],
-		rotation: raw.rotation || [0, 0, 0],
-		scale: raw.scale || [1, 1, 1],
-		color: raw.color || '#4A90E2',
-		roughness: raw.roughness ?? 0.5,
-		metalness: raw.metalness ?? 0.1,
-		emissive: raw.emissive,
-		emissiveIntensity: raw.emissiveIntensity,
-		visible: raw.visible ?? true
-	};
 }
 
 /**
@@ -435,7 +381,7 @@ Instructions : Ouvrez Blender > Scripting > Nouveau > Collez et appuyez sur Run 
 import bpy
 import math
 
-# 1. Nettoyage de la scène initiale (cube et caméras par défaut)
+# 1. Nettoyage de la scène initiale
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 
@@ -452,7 +398,6 @@ def create_material(name, hex_color, roughness=0.5, metalness=0.1, is_emission=F
     nodes = mat.node_tree.nodes
     bsdf = nodes.get("Principled BSDF")
     
-    # Conversion Hex -> RGB float (0.0 - 1.0)
     hex_clean = hex_color.lstrip('#')
     r = int(hex_clean[0:2], 16) / 255.0
     g = int(hex_clean[2:4], 16) / 255.0
@@ -469,15 +414,12 @@ def create_material(name, hex_color, roughness=0.5, metalness=0.1, is_emission=F
             except:
                 pass
     return mat
-
-deg_to_rad = math.pi / 180.0
 `;
 
 	parts.forEach((part, idx) => {
 		const varName = `obj_${idx + 1}`;
 		const matName = `mat_${idx + 1}`;
 
-		// Conversion Three.js Y-up -> Blender Z-up
 		const bx = part.location[0].toFixed(3);
 		const by = (-part.location[2]).toFixed(3);
 		const bz = part.location[1].toFixed(3);
