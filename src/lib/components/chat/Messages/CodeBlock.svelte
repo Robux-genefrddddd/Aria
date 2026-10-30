@@ -19,6 +19,7 @@
 	import equal from 'fast-deep-equal';
 
 	import CodeEditor from '$lib/components/common/CodeEditor.svelte';
+	import Embedded3DViewer from '$lib/components/3dStudio/Embedded3DViewer.svelte';
 	import SvgPanZoom from '$lib/components/common/SVGPanZoom.svelte';
 
 	import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
@@ -457,6 +458,8 @@
 					<pre>{code}</pre>
 				</div>
 			{/if}
+		{:else if lang === 'blender' || lang === 'python:blender' || (code && (code.includes('bpy.ops.mesh.primitive_') || code.includes('Aria 3D Studio')))}
+			<Embedded3DViewer {code} />
 		{:else}
 			<div
 				class="sticky {stickyButtonsClassName} left-0 right-0 py-1.5 px-3.5 gap-2 flex items-center justify-end w-full z-10 text-xs text-black dark:text-white bg-white dark:bg-black rounded-t-2xl"

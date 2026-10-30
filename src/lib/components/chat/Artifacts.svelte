@@ -20,6 +20,7 @@
 	import ArrowsPointingOut from '../icons/ArrowsPointingOut.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
 	import SvgPanZoom from '../common/SVGPanZoom.svelte';
+	import Embedded3DViewer from '$lib/components/3dStudio/Embedded3DViewer.svelte';
 	import ArrowLeft from '../icons/ArrowLeft.svelte';
 	import Download from '../icons/Download.svelte';
 	import ExportModal from '$lib/components/websiteBuilder/ExportModal.svelte';
@@ -277,7 +278,9 @@
 							<span>Exporter</span>
 						</button>
 
-						{#if contents[selectedContentIdx].type === 'iframe'}
+						{#if contents[selectedContentIdx].type === '3d'}
+							<Embedded3DViewer code={contents[selectedContentIdx].content} height="100%" />
+						{:else if contents[selectedContentIdx].type === 'iframe'}
 							<Tooltip content={$i18n.t('Open in full screen')}>
 								<button
 									class=" bg-none border-none text-xs bg-gray-50 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-800 transition rounded-md p-0.5"
