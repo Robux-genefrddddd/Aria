@@ -10,6 +10,7 @@
 	import { exportToGLB, exportToOBJ, exportBlenderScript, generateRobloxImportGuide } from '$lib/services/3d/exporters';
 	import { generate3DWithRodin, getRodinApiKey, setRodinApiKey, isUsingCustomApiKey } from '$lib/services/3d/rodinService';
 	import { generate3DWithModly, checkModlyHealth, getModlyServerUrl, setModlyServerUrl, DEFAULT_MODLY_URL } from '$lib/services/3d/modlyService';
+	import { generate3DWithTrellisCloud, generateReferenceImageFromText } from '$lib/services/3d/trellisCloudService';
 
 	import Studio3DViewport from '$lib/components/3dStudio/Studio3DViewport.svelte';
 	import ImageReferenceDropzone from '$lib/components/3dStudio/ImageReferenceDropzone.svelte';
@@ -18,9 +19,9 @@
 
 	const i18n = getContext('i18n');
 
-	// Moteurs disponibles
-	type EngineMode = 'virtual_blender' | 'modly' | 'hyper3d';
-	let selectedEngine: EngineMode = 'virtual_blender';
+	// Moteurs disponibles (Trellis Cloud 100% autonome par défaut)
+	type EngineMode = 'trellis_cloud' | 'virtual_blender' | 'hyper3d' | 'modly';
+	let selectedEngine: EngineMode = 'trellis_cloud';
 
 	let project: Model3DProject = structuredClone(TEMPLATES_3D.sword);
 	let promptInput = '';
@@ -40,7 +41,7 @@
 	let showGuideModal = false;
 	let showEngineModal = false;
 
-	// Configuration Modly
+	// Configuration Modly (optionnel pour les passionnés avec GPU perso)
 	let modlyUrl = DEFAULT_MODLY_URL;
 	let modlyStatusOk: boolean | null = null;
 	let modlyStatusMsg = '';
@@ -172,8 +173,27 @@
 		isGenerating = true;
 
 		try {
-			if (selectedEngine === 'modly') {
-				// Moteur Modly (GPU Local / Serveur)
+			if (selectedEngine === 'trellis_cloud') {
+				// Moteur 1 : Trellis Cloud AI (100% Cloud, NVIDIA A10G, fonctionne 24/7 pour tous les visiteurs)
+				let targetImageBlob: Blob;
+
+				if (referenceImage) {
+					targetImageBlob = dataURLtoBlob(referenceImage);
+				} else {
+					progressStep = 'Génération de la vue de référence par IA...';
+					targetImageBlob = await generateReferenceImageFromText(text.trim());
+				}
+
+				progressStep = 'Connexion au cluster GPU Trellis Cloud...';
+				const res = await generate3DWithTrellisCloud(targetImageBlob, (step) => {
+					progressStep = step;
+				});
+
+				activeModelUrl = res.glbUrl;
+				project.title = text.trim() || 'Modèle Trellis Cloud 3D';
+				toast.success('Modèle 3D haute fidélité généré en direct par le Cloud !');
+			} else if (selectedEngine === 'modly') {
+				// Moteur 2 : Modly (GPU Local personnel)
 				if (!referenceImage) {
 					toast.error('Le moteur Modly nécessite une image de référence pour générer le maillage 3D.');
 					isGenerating = false;
@@ -191,7 +211,7 @@
 				project.title = text.trim() || 'Modèle Généré par Modly';
 				toast.success('Modèle 3D généré avec succès par Modly !');
 			} else if (selectedEngine === 'hyper3d') {
-				// Moteur Hyper3D Rodin (Cloud AI)
+				// Moteur 3 : Hyper3D Rodin (Cloud AI)
 				progressStep = 'Initialisation de Hyper3D Rodin AI...';
 				const imageBlob = referenceImage ? dataURLtoBlob(referenceImage) : undefined;
 				const res = await generate3DWithRodin(
@@ -207,7 +227,7 @@
 				project.title = text.trim() || 'Modèle Généré par Hyper3D Rodin';
 				toast.success('Modèle 3D PBR généré par Hyper3D Rodin !');
 			} else {
-				// Moteur Virtuel Low-Poly Blender (Instantané in-browser)
+				// Moteur 4 : Virtuel Low-Poly Blender (Instantané in-browser)
 				progressStep = 'Initialisation du moteur Aria 3D Studio...';
 				const result = await generate3DModelWithAria(
 					text.trim(),
@@ -302,7 +322,7 @@
 </script>
 
 <svelte:head>
-	<title>Aria 3D Studio — Modélisation 3D, Modly & Blender Intégré</title>
+	<title>Aria 3D Studio — Génération 3D Cloud 24/7 & Roblox</title>
 </svelte:head>
 
 <div class="w-full h-full flex flex-col bg-neutral-950 text-neutral-100 overflow-y-auto">
@@ -315,11 +335,11 @@
 			<div>
 				<div class="flex items-center gap-2">
 					<h1 class="text-sm font-bold text-white tracking-wide">Aria 3D Studio</h1>
-					<span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-medium">
-						Multi-Moteurs • Modly • Hyper3D • Blender Virtuel
+					<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">
+						☁️ 100% En Ligne 24/7 • GPU Cloud • Roblox MeshPart
 					</span>
 				</div>
-				<p class="text-xs text-neutral-400">Génération 3D directe avec exécution de scripts Python (bpy), IA neuronale et export Roblox MeshPart</p>
+				<p class="text-xs text-neutral-400">Génération de modèles 3D neuronaux (.GLB) et Low-Poly procéduraux autonome pour tous vos visiteurs</p>
 			</div>
 		</div>
 
@@ -332,7 +352,7 @@
 				title="Configurer les moteurs IA 3D"
 			>
 				<span>⚙️</span>
-				<span>Config Moteurs IA</span>
+				<span>Options Moteurs IA</span>
 			</button>
 
 			<button
@@ -401,42 +421,68 @@
 		<div class="lg:col-span-4 flex flex-col gap-4">
 			<!-- Carte Sélection du Moteur de Génération -->
 			<div class="p-3 rounded-2xl bg-neutral-900/80 border border-neutral-800 flex flex-col gap-2">
-				<span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Moteur de Génération 3D :</span>
-				<div class="grid grid-cols-3 gap-1.5">
+				<div class="flex items-center justify-between">
+					<span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Moteur de Génération 3D :</span>
+					<span class="text-[10px] text-emerald-400 flex items-center gap-1">
+						<span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+						Serveur Cloud Actif
+					</span>
+				</div>
+				<div class="grid grid-cols-2 gap-1.5">
 					<button
 						type="button"
-						on:click={() => (selectedEngine = 'virtual_blender')}
-						class="px-2 py-2 rounded-xl text-xs font-medium text-center transition flex flex-col items-center gap-1 {selectedEngine === 'virtual_blender'
-							? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm'
+						on:click={() => (selectedEngine = 'trellis_cloud')}
+						class="px-2.5 py-2 rounded-xl text-xs font-medium text-left transition flex flex-col gap-0.5 {selectedEngine === 'trellis_cloud'
+							? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm'
 							: 'bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800'}"
 					>
-						<span class="text-base">🛠️</span>
-						<span class="text-[11px] font-semibold leading-tight">Blender Virtuel</span>
-						<span class="text-[9px] text-emerald-400">Instantané • 0€</span>
+						<div class="flex items-center gap-1.5">
+							<span class="text-sm">☁️</span>
+							<span class="font-bold text-xs">Trellis Cloud</span>
+						</div>
+						<span class="text-[10px] text-emerald-400/90">100% En Ligne • GPU Cloud A10G</span>
 					</button>
 
 					<button
 						type="button"
-						on:click={() => (selectedEngine = 'modly')}
-						class="px-2 py-2 rounded-xl text-xs font-medium text-center transition flex flex-col items-center gap-1 {selectedEngine === 'modly'
-							? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-sm'
+						on:click={() => (selectedEngine = 'virtual_blender')}
+						class="px-2.5 py-2 rounded-xl text-xs font-medium text-left transition flex flex-col gap-0.5 {selectedEngine === 'virtual_blender'
+							? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm'
 							: 'bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800'}"
 					>
-						<span class="text-base">⚡</span>
-						<span class="text-[11px] font-semibold leading-tight">Modly AI</span>
-						<span class="text-[9px] text-purple-400">GPU Local • Illimité</span>
+						<div class="flex items-center gap-1.5">
+							<span class="text-sm">🛠️</span>
+							<span class="font-bold text-xs">Blender Virtuel</span>
+						</div>
+						<span class="text-[10px] text-cyan-400/90">Instantané • 0.5s • Zéro Coût</span>
 					</button>
 
 					<button
 						type="button"
 						on:click={() => (selectedEngine = 'hyper3d')}
-						class="px-2 py-2 rounded-xl text-xs font-medium text-center transition flex flex-col items-center gap-1 {selectedEngine === 'hyper3d'
+						class="px-2.5 py-2 rounded-xl text-xs font-medium text-left transition flex flex-col gap-0.5 {selectedEngine === 'hyper3d'
 							? 'bg-blue-500/20 text-blue-300 border border-blue-500/50 shadow-sm'
 							: 'bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800'}"
 					>
-						<span class="text-base">✨</span>
-						<span class="text-[11px] font-semibold leading-tight">Hyper3D Rodin</span>
-						<span class="text-[9px] text-blue-400">Cloud AI • PBR</span>
+						<div class="flex items-center gap-1.5">
+							<span class="text-sm">✨</span>
+							<span class="font-bold text-xs">Hyper3D Rodin</span>
+						</div>
+						<span class="text-[10px] text-blue-400/90">API Cloud • PBR</span>
+					</button>
+
+					<button
+						type="button"
+						on:click={() => (selectedEngine = 'modly')}
+						class="px-2.5 py-2 rounded-xl text-xs font-medium text-left transition flex flex-col gap-0.5 {selectedEngine === 'modly'
+							? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-sm'
+							: 'bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800'}"
+					>
+						<div class="flex items-center gap-1.5">
+							<span class="text-sm">⚡</span>
+							<span class="font-bold text-xs">Modly Local</span>
+						</div>
+						<span class="text-[10px] text-purple-400/90">GPU Perso (Optionnel)</span>
 					</button>
 				</div>
 			</div>
@@ -458,9 +504,11 @@
 				<div class="relative">
 					<textarea
 						bind:value={promptInput}
-						placeholder={selectedEngine === 'modly'
+						placeholder={selectedEngine === 'trellis_cloud'
+							? 'Décrivez votre objet 3D (ex: Une épée cyberpunk avec néons bleus, un kart futuriste, un drone de combat)...'
+							: selectedEngine === 'modly'
 							? 'Pour Modly : Déposez une image ci-dessous (photo, dessin, concept-art), Modly génèrera le maillage 3D via votre GPU...'
-							: 'Décrivez votre modèle 3D (ex: Une dague magique avec lame en améthyste facettée et garde dorée, ou un kart cyberpunk)...'}
+							: 'Décrivez votre modèle 3D low-poly (ex: Une dague magique avec lame en améthyste facettée et garde dorée)...'}
 						rows={selectedEngine === 'modly' ? 2 : 4}
 						class="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-200 placeholder:text-neutral-600 focus:border-cyan-500 outline-hidden resize-none leading-relaxed"
 					></textarea>
@@ -470,7 +518,7 @@
 				<div>
 					<div class="flex items-center justify-between mb-1.5">
 						<span class="text-[11px] text-neutral-400 font-medium">
-							Image de référence {selectedEngine === 'modly' ? '(Requise pour Modly)' : '(Optionnelle)'} :
+							Image de référence {selectedEngine === 'modly' ? '(Requise pour Modly)' : '(Optionnelle : photo, croquis, concept)'} :
 						</span>
 					</div>
 					<ImageReferenceDropzone
@@ -490,7 +538,7 @@
 					on:click={() => triggerGeneration(promptInput)}
 					class="w-full py-2.5 rounded-xl font-semibold text-xs tracking-wide transition flex items-center justify-center gap-2 shadow-lg {isGenerating || (!promptInput.trim() && !referenceImage)
 						? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-						: 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 active:scale-[0.98]'}"
+						: 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-600 hover:from-emerald-400 hover:via-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 active:scale-[0.98]'}"
 				>
 					{#if isGenerating}
 						<div class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -498,7 +546,9 @@
 					{:else}
 						<span>✨</span>
 						<span>
-							{selectedEngine === 'modly'
+							{selectedEngine === 'trellis_cloud'
+								? 'Générer en Direct avec Trellis Cloud 24/7'
+								: selectedEngine === 'modly'
 								? 'Générer avec Modly AI (GPU Local)'
 								: selectedEngine === 'hyper3d'
 								? 'Générer avec Hyper3D Rodin'
@@ -512,7 +562,7 @@
 			<div class="p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800 flex flex-col gap-2">
 				<h3 class="text-xs font-bold text-white">{project.title}</h3>
 				<p class="text-xs text-neutral-400 leading-relaxed">
-					{activeModelUrl ? 'Modèle 3D chargé via fichier .GLB externe (Modly / Hyper3D).' : project.description}
+					{activeModelUrl ? 'Modèle 3D haute fidélité chargé via .GLB cloud (Trellis / Rodin / Modly).' : project.description}
 				</p>
 				{#if !activeModelUrl && project.palette.length > 0}
 					<div class="flex items-center gap-2 mt-2 pt-2 border-t border-neutral-800/80">
@@ -609,14 +659,14 @@
 	</div>
 </div>
 
-<!-- Modal Configuration des Moteurs IA (Modly & Hyper3D) -->
+<!-- Modal Configuration des Moteurs IA -->
 {#if showEngineModal}
 	<div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
 		<div class="w-full max-w-xl rounded-2xl bg-neutral-900 border border-neutral-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 			<div class="p-4 border-b border-neutral-800 flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<span class="text-xl">⚙️</span>
-					<h3 class="font-bold text-white text-sm">Configuration des Moteurs IA 3D</h3>
+					<h3 class="font-bold text-white text-sm">Architecture & Moteurs IA 3D</h3>
 				</div>
 				<button
 					type="button"
@@ -628,25 +678,57 @@
 			</div>
 
 			<div class="p-5 flex flex-col gap-5 overflow-y-auto text-xs leading-relaxed">
-				<!-- Section 1 : Modly Open-Source -->
+				<!-- Section 1 : Trellis Cloud -->
+				<div class="p-4 rounded-xl bg-neutral-950/80 border border-emerald-500/30 flex flex-col gap-2">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<span class="text-base">☁️</span>
+							<h4 class="font-bold text-emerald-300 text-xs uppercase tracking-wide">Trellis Cloud AI (Recommandé • Actif)</h4>
+						</div>
+						<span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
+							100% En Ligne 24/7
+						</span>
+					</div>
+					<p class="text-neutral-300">
+						Tourne 24h/24 sur un cluster GPU cloud (NVIDIA A10G). Vos visiteurs peuvent générer des modèles 3D complets (.GLB) à tout moment sans que votre PC personnel n'ait besoin d'être allumé.
+					</p>
+				</div>
+
+				<!-- Section 2 : Blender Virtuel -->
+				<div class="p-4 rounded-xl bg-neutral-950/80 border border-cyan-500/30 flex flex-col gap-2">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<span class="text-base">🛠️</span>
+							<h4 class="font-bold text-cyan-300 text-xs uppercase tracking-wide">Aria Blender Virtuel</h4>
+						</div>
+						<span class="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
+							Instantané • 0.5s
+						</span>
+					</div>
+					<p class="text-neutral-300">
+						Génère du code Python <code>bpy</code> procédural et construit le maillage Three.js directement dans le navigateur du visiteur. Zéro latence, zéro coût de serveur, idéal pour du low-poly ultra rapide.
+					</p>
+				</div>
+
+				<!-- Section 3 : Modly Local (Optionnel) -->
 				<div class="p-4 rounded-xl bg-neutral-950/80 border border-purple-500/30 flex flex-col gap-3">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2">
 							<span class="text-base">⚡</span>
-							<h4 class="font-bold text-purple-300 text-xs uppercase tracking-wide">Modly AI (Open-Source GPU Local)</h4>
+							<h4 class="font-bold text-purple-300 text-xs uppercase tracking-wide">Modly AI (GPU Local de l'Admin)</h4>
 						</div>
 						<span class="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold">
-							100% Gratuit & Illimité
+							Optionnel
 						</span>
 					</div>
 					<p class="text-neutral-400">
-						Modly (<a href="https://github.com/lightningpixel/modly" target="_blank" class="text-cyan-400 underline">lightningpixel/modly</a>) exécute des modèles 3D (Hunyuan3D, Trellis) sur votre propre carte graphique.
+						Si vous préférez exécuter les calculs sur votre propre carte graphique personnelle en ouvrant un tunnel ngrok vers Vercel.
 					</p>
-
 					<div>
-						<label class="block text-neutral-300 font-semibold mb-1">URL du Serveur Modly :</label>
+						<label for="modly-url-input" class="block text-neutral-300 font-semibold mb-1">URL du Serveur Modly :</label>
 						<div class="flex gap-2">
 							<input
+								id="modly-url-input"
 								type="text"
 								bind:value={modlyUrl}
 								placeholder="http://localhost:8000 ou https://mon-tunnel.ngrok-free.app"
@@ -662,22 +744,14 @@
 							</button>
 						</div>
 					</div>
-
 					{#if modlyStatusMsg}
 						<div class="p-2.5 rounded-lg text-xs {modlyStatusOk ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}">
 							{modlyStatusMsg}
 						</div>
 					{/if}
-
-					<div class="p-2.5 rounded-lg bg-neutral-900 text-[11px] text-neutral-400 leading-normal">
-						<strong class="text-neutral-200">Comment le faire tourner sur votre PC avec Vercel :</strong><br />
-						1. Lancez Modly ou exécutez <code>uvicorn main:app --port 8000</code> dans le dossier <code>api</code>.<br />
-						2. Pour connecter votre site Vercel (HTTPS), ouvrez un tunnel gratuit : <code>ngrok http 8000</code>.<br />
-						3. Collez l'URL ngrok ci-dessus et cliquez sur <em>Tester</em>.
-					</div>
 				</div>
 
-				<!-- Section 2 : Hyper3D Rodin -->
+				<!-- Section 4 : Hyper3D Rodin -->
 				<div class="p-4 rounded-xl bg-neutral-950/80 border border-blue-500/30 flex flex-col gap-3">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2">
@@ -685,20 +759,17 @@
 							<h4 class="font-bold text-blue-300 text-xs uppercase tracking-wide">Hyper3D Rodin AI (Cloud)</h4>
 						</div>
 						<span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold">
-							Text & Image-to-3D PBR
+							API Clé Développeur
 						</span>
 					</div>
-					<p class="text-neutral-400">
-						Génération neuronale dans le cloud basée sur le moteur de <a href="https://github.com/ctate/3d-model-generator" target="_blank" class="text-cyan-400 underline">ctate/3d-model-generator</a>.
-					</p>
-
 					<div>
-						<label class="block text-neutral-300 font-semibold mb-1">Clé API Hyper3D Rodin :</label>
+						<label for="rodin-key-input" class="block text-neutral-300 font-semibold mb-1">Clé API Hyper3D Rodin :</label>
 						<div class="flex gap-2">
 							<input
+								id="rodin-key-input"
 								type="password"
 								bind:value={rodinApiKey}
-								placeholder="vibecoding (démo) ou votre clé developpeur hyperhuman"
+								placeholder="vibecoding (démo) ou clé personnelle"
 								class="flex-1 p-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:border-blue-400 outline-none"
 							/>
 							<button
