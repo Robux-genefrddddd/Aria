@@ -162,6 +162,19 @@
 			}
 		});
 
+		// Rendu du manifeste Aria 3D Studio
+		formatted = formatted.replace(/```(?:json:3d_manifest|json:3d)\s*([\s\S]*?)```/gi, (match, jsonStr) => {
+			try {
+				const data = JSON.parse(jsonStr.trim());
+				const title = data.title || 'Modèle 3D Low-Poly';
+				const desc = data.description ? `\n> *${data.description}*` : '';
+				const count = (data.parts && data.parts.length) ? ` — ${data.parts.length} pièces` : '';
+				return `\n\n> 🎨 **Modèle 3D Low-Poly généré :** ${title}${count}${desc}\n> [👉 Visualiser & Exporter dans Aria 3D Studio](/workspace/3d-studio)\n\n`;
+			} catch (e) {
+				return '';
+			}
+		});
+
 		return formatted;
 	};
 

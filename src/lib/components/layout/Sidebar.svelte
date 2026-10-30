@@ -88,6 +88,7 @@
 	import SearchIcon from './Sidebar/icons/Search.svelte';
 	import Sidebar from '../icons/Sidebar.svelte';
 	import WorkspaceIcon from './Sidebar/icons/Workspace.svelte';
+	import CubeIcon from '../icons/Cube.svelte';
 	import HotkeyHint from '../common/HotkeyHint.svelte';
 	import Dropdown from '../common/Dropdown.svelte';
 	import DropdownMenu from '../common/DropdownMenu.svelte';
@@ -96,7 +97,7 @@
 	import MobileSwipePanel from '../common/MobileSwipePanel.svelte';
 
 	const BREAKPOINT = 768;
-	const DEFAULT_PINNED_ITEMS = ['notes', 'website-builder'];
+	const DEFAULT_PINNED_ITEMS = ['notes', 'website-builder', '3d-studio'];
 
 	let scrollTop = 0;
 
@@ -159,6 +160,9 @@
 		if (!items.includes('website-builder')) {
 			items = [...items, 'website-builder'];
 		}
+		if (!items.includes('3d-studio')) {
+			items = [...items, '3d-studio'];
+		}
 		return items.filter((id) => id !== 'workspace');
 	})();
 
@@ -195,6 +199,7 @@
 			notes: { label: 'Notes', href: '/notes', iconType: 'note' },
 			workspace: { label: 'Workspace', href: '/workspace', iconType: 'workspace' },
 			'website-builder': { label: 'Website Builder', href: '/workspace/website-builder', iconType: 'website-builder' },
+			'3d-studio': { label: 'Aria 3D Studio', href: '/workspace/3d-studio', iconType: '3d-studio', badge: '3D' },
 			automations: { label: 'Automations', href: '/automations', iconType: 'automations' },
 			calendar: { label: 'Calendar', href: '/calendar', iconType: 'calendar' },
 			playground: { label: 'Playground', href: '/playground', iconType: 'playground' }
@@ -206,6 +211,7 @@
 		notes: '/notes',
 		workspace: '/workspace',
 		'website-builder': '/workspace/website-builder',
+		'3d-studio': '/workspace/3d-studio',
 		calendar: '/calendar',
 		automations: '/automations',
 		playground: '/playground'

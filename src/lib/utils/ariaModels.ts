@@ -3,7 +3,7 @@
  * et compétences Roblox / Luau intégrées.
  */
 
-import { ROBLOX_ENGINE_STANDARDS, ROBLOX_SUBAGENTS_CAPABILITY_PROMPT } from './robloxBrain';
+import { ROBLOX_ENGINE_STANDARDS, ROBLOX_SUBAGENTS_CAPABILITY_PROMPT, ROBLOX_3D_STUDIO_CAPABILITY_PROMPT } from './robloxBrain';
 
 export interface AriaProviderConfig {
 	name: string;
@@ -145,7 +145,7 @@ POSTURE D'ARIA CODE & STANDARDS D'INGÉNIERIE :
   - Nettoyage automatique : Détruire les Attachments et LinearVelocity quand l'action se termine.`;
 
 // Contextes généraux avec bouclier d'identité
-const GENERAL_ROBLOX_CONTEXT = `${ARIA_IDENTITY_PROMPT}\n\n${ROBLOX_SUBAGENTS_CAPABILITY_PROMPT}\n\n${ROBLOX_ENGINE_STANDARDS}`;
+const GENERAL_ROBLOX_CONTEXT = `${ARIA_IDENTITY_PROMPT}\n\n${ROBLOX_SUBAGENTS_CAPABILITY_PROMPT}\n\n${ROBLOX_3D_STUDIO_CAPABILITY_PROMPT}\n\n${ROBLOX_ENGINE_STANDARDS}`;
 
 export const WEBSITE_GENERATOR_PROMPT = `
 ### 🌐 GÉNÉRATEUR DE SITES WEB EN DIRECT (STYLE CLAUDE ARTIFACTS / V0) :
@@ -379,7 +379,7 @@ export const ARIA_MODELS_CONFIG: Record<string, AriaModelConfig> = {
 				beta: false,
 				accessRoles: ['beta_tester', 'admin', 'owner'],
 				description: 'Super-AI expert in Roblox Luau game development and Studio systems.',
-				systemPrompt: `${ROBLOX_LUAU_SYSTEM_PROMPT}\n\n${ROBLOX_ENGINE_STANDARDS}\n\n${ROBLOX_SUBAGENTS_CAPABILITY_PROMPT}\n\n${WEBSITE_GENERATOR_PROMPT}\n\n### 🚀 RÈGLE DE COMPLÉTUDE & CODE DIRECT POUR ARIA CODE :
+				systemPrompt: `${ROBLOX_LUAU_SYSTEM_PROMPT}\n\n${ROBLOX_ENGINE_STANDARDS}\n\n${ROBLOX_SUBAGENTS_CAPABILITY_PROMPT}\n\n${ROBLOX_3D_STUDIO_CAPABILITY_PROMPT}\n\n${WEBSITE_GENERATOR_PROMPT}\n\n### 🚀 RÈGLE DE COMPLÉTUDE & CODE DIRECT POUR ARIA CODE :
 Tu es **Aria Code**, la SEULE IA spécialisée dans la rédaction de scripts complets Roblox Luau et Web.
 Quand l'utilisateur te demande un script :
 - Fournis TOUJOURS le script en entier, ligne par ligne, de la première ligne jusqu'au dernier 'end' / 'return'.
@@ -420,6 +420,48 @@ Quand l'utilisateur te demande un script :
 				baseUrl: 'https://openrouter.ai/api/v1',
 				apiKey: API_KEYS.openrouter,
 				model: 'nvidia/nemotron-3.5-lightning:free'
+			},
+			{
+				name: 'Google-Gemini-2.5-Flash',
+				baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+				apiKey: API_KEYS.gemini,
+				model: 'gemini-2.5-flash'
+			}
+		]
+	},
+
+	
+	'aria-3d': {
+		id: 'aria-3d',
+		name: 'Aria 3D Studio',
+		description: 'Super-IA maîtresse en modélisation 3D Low-Poly et scripts Blender (bpy) pour Roblox Studio.',
+		owned_by: 'aria',
+		info: {
+			meta: {
+				beta: false,
+				accessRoles: ['user', 'beta_tester', 'admin', 'owner'],
+				description: 'Génération de modèles 3D Low-Poly, scripts Blender bpy et export direct Roblox MeshPart.',
+				systemPrompt: `${ARIA_IDENTITY_PROMPT}\n\n${ROBLOX_3D_STUDIO_CAPABILITY_PROMPT}\n\n${ROBLOX_ENGINE_STANDARDS}`
+			}
+		},
+		fallbacks: [
+			{
+				name: 'Mistral-Codestral-256k',
+				baseUrl: 'https://api.mistral.ai/v1',
+				apiKey: API_KEYS.mistral,
+				model: 'codestral-latest'
+			},
+			{
+				name: 'OpenRouter-Nemotron-3-Ultra-550B-Free',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				apiKey: API_KEYS.openrouter,
+				model: 'nvidia/nemotron-3-ultra-550b-a55b:free'
+			},
+			{
+				name: 'Groq-Qwen-3.8-27B',
+				baseUrl: 'https://api.groq.com/openai/v1',
+				apiKey: API_KEYS.groq,
+				model: 'qwen/qwen3.8-27b'
 			},
 			{
 				name: 'Google-Gemini-2.5-Flash',
@@ -562,7 +604,7 @@ export const sendAriaCompletion = async (
 
 	for (const provider of modelConfig.fallbacks) {
 		try {
-			const isCodeModel = String(modelId || '').toLowerCase().includes('code');
+			const isCodeModel = String(modelId || '').toLowerCase().includes('code') || String(modelId || '').toLowerCase().includes('3d') || String(modelId || '').toLowerCase().includes('subagent');
 			const res = await fetch(`${provider.baseUrl}/chat/completions`, {
 				method: 'POST',
 				headers: {

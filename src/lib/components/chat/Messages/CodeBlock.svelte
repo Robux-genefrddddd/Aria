@@ -1,6 +1,7 @@
 <script lang="ts">
 	import hljs from 'highlight.js';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
 	import { getContext, onMount, tick, onDestroy } from 'svelte';
 	import { config, pyodideWorker as pyodideWorkerStore } from '$lib/stores';
 
