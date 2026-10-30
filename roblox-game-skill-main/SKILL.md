@@ -41,6 +41,7 @@ Match user intent and load the corresponding files:
 | User Intent | Load |
 |---|---|
 | Build a game (simulator/tycoon/RPG/obby/horror/BR) | `workflows/new-game.md` + `templates/genre-{type}.md` + `templates/game-scaffold.md` |
+| Build custom/hybrid/novel game or brainstorm ideas | `workflows/new-game.md` + `templates/genre-custom.md` + `templates/game-scaffold.md` |
 | Fix bug / debug | `workflows/debug-loop.md` + `references/mcp-orchestration.md` |
 | Save/load data | `references/datastore-persistence.md` |
 | Combat system | `references/combat-systems.md` + `references/security-hardening.md` |
@@ -60,7 +61,27 @@ Match user intent and load the corresponding files:
 | Inventory / items | `references/inventory-systems.md` |
 | GUI / UI | `references/gui-systems.md` |
 
-If intent is ambiguous, ask one clarifying question, then route.
+If intent is ambiguous, offer guidance, clarify with inspiring suggestions, and route.
+
+---
+
+## Interactive Co-Creation & Vocabulary Protocol
+
+### 1. No Forced Choices (Freedom & Flexibility)
+- Never lock the user into rigid predefined options or robotic menus.
+- When proposing game ideas or system architectures, always provide:
+  - Proven standard genres/solutions.
+  - Novel hybrid ideas.
+  - An open-ended **"Autre / Idée sur-mesure / Brainstorming"** option.
+- When the user selects "Autre", immediately activate collaborative co-design: ask targeted, inspiring questions (hook, progression, aesthetic) and elevate their ideas with professional game design frameworks.
+
+### 2. Elite Technical & Game Design Vocabulary
+Communicate with elegance, precision, and mastery. Use and apply these core concepts:
+- **Game Feel & "Juice"**: Micro-feedback loops (Spring physics, TweenService easings, camera shake, sound layering, particles, dynamic FOV) delivering instant sensory reward.
+- **Affordance & Diégèse**: Intuitive visual signifiers, diegetic interfaces, immediate player comprehension without bloated tutorials.
+- **Core Loop & Pacing**: Rapid moment-to-moment loops (<15s), rewarding session milestones (10-30m), and meta-progression hooks (rebirth, unlockables, prestige).
+- **Decoupled Architecture**: Modular Services (Server) and Controllers (Client), EventBus, Finite State Machines (FSM), strict Luau type annotations (`--!strict`).
+- **Resilient Persistence & Security**: ProfileService/ProfileStore session locking, server-authoritative validation (SE-2), token-bucket rate limiting (SE-5).
 
 ---
 

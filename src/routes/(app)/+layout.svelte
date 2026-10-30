@@ -483,13 +483,6 @@
 							if ($settings?.models?.some((m) => ['aria-plus', 'aria-code'].includes(m))) {
 								settings.set({ ...$settings, models: ['aria-basic'] });
 							}
-							toast.warning(
-								$i18n.t('Votre rôle a été modifié en Utilisateur.')
-							);
-						} else {
-							toast.success(
-								$i18n.t(`Accès instantané : Rôle ${newRole === 'owner' ? 'Fondateur' : newRole === 'admin' ? 'Administrateur' : 'Bêta-Testeur'} activé !`)
-							);
 						}
 					}
 				});

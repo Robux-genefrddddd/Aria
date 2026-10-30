@@ -84,15 +84,15 @@
 					metaThemeColorTag.setAttribute('content', '#171717');
 				}
 
-				// LICENSE covers these Open WebUI splash logo assets.
-				// Do not alter, remove, obscure, or replace them except as LICENSE permits:
-				// https://docs.openwebui.com/license.
-				const preload = document.createElement('link');
-				preload.rel = 'preload';
-				preload.as = 'image';
-				preload.href = '/static/favicon.png';
-				preload.setAttribute('fetchpriority', 'high');
-				document.head.appendChild(preload);
+				// Only preload splash logo if splash screen element exists in DOM
+				if (document.getElementById('splash')) {
+					const preload = document.createElement('link');
+					preload.rel = 'preload';
+					preload.as = 'image';
+					preload.href = '/static/favicon.png';
+					preload.setAttribute('fetchpriority', 'high');
+					document.head.appendChild(preload);
+				}
 
 				window.matchMedia('(prefers-color-scheme: dark)').addListener((e) => {
 					if (localStorage.theme === 'system') {

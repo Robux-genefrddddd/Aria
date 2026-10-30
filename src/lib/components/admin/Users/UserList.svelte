@@ -91,7 +91,6 @@
 			await updateFirebaseUserRole(userToToggle.id, newRole);
 			userToToggle.role = newRole;
 			users = [...users];
-			toast.success(newRole === 'banned' ? $i18n.t('Utilisateur banni') : $i18n.t('Utilisateur débanni'));
 			await getUserList();
 		} catch (error) {
 			toast.error(`${error}`);

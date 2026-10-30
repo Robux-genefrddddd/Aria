@@ -124,13 +124,46 @@
 		sourceIds = [...new Set(result)];
 	};
 
-	/** @param {string} messageContent */
-	const formatMessageContent = (messageContent) =>
-		model?.info?.meta?.capabilities?.citations == false
+		/** @param {string} messageContent */
+	const formatMessageContent = (messageContent) => {
+		let formatted = model?.info?.meta?.capabilities?.citations == false
 			? replaceOutsideCode(messageContent, (segment) =>
 					segment.replace(/\s*(\[(?:\d+(?:#[^,\]\s]+)?(?:,\s*\d+(?:#[^,\]\s]+)?)*)\])+/g, '')
 				)
 			: messageContent;
+
+		// Affichage sobre pendant la création en cours
+		if (formatted.includes('<create_subagent>') && !formatted.includes('</create_subagent>')) {
+			formatted = formatted.replace(/<create_subagent>[\s\S]*$/gi, '\n\n*Création en cours d\'un sous-agent...*\n\n');
+		}
+
+		// Rendu sobre, professionnel et naturel du sous-agent une fois déployé
+		formatted = formatted.replace(/<create_subagent>([\s\S]*?)<\/create_subagent>/gi, (match, jsonStr) => {
+			try {
+				const data = JSON.parse(jsonStr.trim());
+				const name = data.name || 'Spécialiste Technique';
+				const role = data.role ? ` — *${data.role}*` : '';
+				const desc = data.description ? `\n> ${data.description}` : '';
+				return `\n\n> **Sous-agent spécialisé déployé :** ${name}${role}${desc}\n\n`;
+			} catch (e) {
+				return '';
+			}
+		});
+
+		formatted = formatted.replace(/```(?:json:create_subagent|json:subagent|subagent)\s*([\s\S]*?)```/gi, (match, jsonStr) => {
+			try {
+				const data = JSON.parse(jsonStr.trim());
+				const name = data.name || 'Spécialiste Technique';
+				const role = data.role ? ` — *${data.role}*` : '';
+				const desc = data.description ? `\n> ${data.description}` : '';
+				return `\n\n> **Sous-agent spécialisé déployé :** ${name}${role}${desc}\n\n`;
+			} catch (e) {
+				return '';
+			}
+		});
+
+		return formatted;
+	};
 
 	let autoOpenedArtifactIds = new Set();
 
@@ -154,8 +187,7 @@
 				isArtifact &&
 				hasClosingCodeFence(raw) &&
 				!autoOpenedArtifactIds.has(artifactId) &&
-				!$mobile &&
-				$currentChatId
+				!$mobile
 			) {
 				autoOpenedArtifactIds.add(artifactId);
 				await tick();

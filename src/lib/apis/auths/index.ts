@@ -131,7 +131,7 @@ export const getSessionUser = async (token: string) => {
 			uid: uid,
 			email: email,
 			name: name,
-			role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email === 'mrpinpinpro@gmail.com') ? 'owner' : (role || 'user'),
+			role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email === 'mrpinpinpro@gmail.com') ? 'owner' : (role || 'pending'),
 			profile_image_url: profileImageUrl,
 			permissions: {
 				workspace: { models: true, knowledge: true, prompts: true, tools: true, skills: true },

@@ -3,7 +3,8 @@
 	const { saveAs } = fileSaver;
 
 	import { user } from '$lib/stores';
-	import { refreshChatList } from '$lib/stores/chatList';
+	import { refreshChatList, clearAllChatLists, refreshFolderChatLists } from '$lib/stores/chatList';
+	import { chatId } from '$lib/stores';
 
 	import { archiveAllChats, deleteAllChats, getAllChats, importChats } from '$lib/apis/chats';
 	import { getImportOrigin, convertOpenAIChats } from '$lib/utils';
@@ -105,12 +106,27 @@
 	};
 
 	const deleteAllChatsHandler = async () => {
-		await goto('/');
-		await deleteAllChats(localStorage.token).catch((error) => {
-			toast.error(`${error}`);
-		});
+		try {
+			await chatId.set('');
+			
+			await goto('/');
+			clearAllChatLists();
+			const success = await deleteAllChats(localStorage.token).catch((error) => {
+				toast.error(`${error}`);
+				return false;
+			});
 
-		await refreshChatList(localStorage.token);
+			if (success !== false) {
+				clearAllChatLists();
+				await Promise.all([
+					refreshChatList(localStorage.token, { clearPinned: true }),
+					refreshFolderChatLists(null)
+				]);
+				toast.success($i18n.t('All chats deleted successfully'));
+			}
+		} catch (err) {
+			console.error('Error deleting all chats:', err);
+		}
 	};
 </script>
 

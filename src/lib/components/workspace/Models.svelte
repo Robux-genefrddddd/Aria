@@ -63,6 +63,15 @@
 	import CommunityDiscover from './common/CommunityDiscover.svelte';
 	import Pagination from '../common/Pagination.svelte';
 	import Badge from '$lib/components/common/Badge.svelte';
+	import SkillBuilderModal from '$lib/components/workspace/Skills/SkillBuilderModal.svelte';
+	import SubagentsModal from '$lib/components/chat/SubagentsModal.svelte';
+	import {
+		getCustomSkills,
+		deleteCustomSkill,
+		canAccessSkill,
+		canManageSkill,
+		type CustomSkill
+	} from '$lib/apis/customSkills';
 
 	let shiftKey = false;
 
@@ -92,8 +101,47 @@
 
 	let searchDebounceTimer;
 
+	let customSkills: CustomSkill[] = [];
+	let showSkillBuilder = false;
+	let showSubagentsModal = false;
+	let editingCustomSkill: CustomSkill | null = null;
+	let skillFilter: 'all' | 'public' | 'private' = 'all';
+
+	const refreshCustomSkills = async () => {
+		customSkills = await getCustomSkills();
+	};
+
+	$: filteredCustomSkills = customSkills.filter((s) => {
+		if (skillFilter === 'public' && s.visibility !== 'public') return false;
+		if (skillFilter === 'private' && s.visibility !== 'private') return false;
+		if (query) {
+			const q = query.toLowerCase();
+			return (
+				s.name.toLowerCase().includes(q) ||
+				(s.description && s.description.toLowerCase().includes(q)) ||
+				(s.tags && s.tags.some((t) => t.toLowerCase().includes(q)))
+			);
+		}
+		return true;
+	});
+
 	$: if (loaded) {
 		workspaceActions.set([
+			{
+				id: 'subagents-hub-open',
+				label: '🤖 Sous-Agents Aria',
+				onClick: () => {
+					showSubagentsModal = true;
+				}
+			},
+			{
+				id: 'skill-builder-create',
+				label: 'Nouveau Skill',
+				onClick: () => {
+					editingCustomSkill = null;
+					showSkillBuilder = true;
+				}
+			},
 			{
 				id: 'models-new',
 				label: $i18n.t('Create'),
@@ -402,6 +450,7 @@
 
 		let groups = await getGroups(localStorage.token);
 		groupIds = groups.map((group) => group.id);
+		await refreshCustomSkills();
 
 		await tick();
 		loaded = true;
@@ -444,6 +493,16 @@
 </svelte:head>
 
 {#if loaded}
+	<SubagentsModal bind:show={showSubagentsModal} />
+
+	<SkillBuilderModal
+		bind:show={showSkillBuilder}
+		editingSkill={editingCustomSkill}
+		onSave={async () => {
+			await refreshCustomSkills();
+		}}
+	/>
+
 	<ModelDeleteConfirmDialog
 		bind:show={showModelDeleteConfirm}
 		on:confirm={() => {
@@ -648,6 +707,160 @@
 					</div>
 				</Dropdown>
 			</div>
+		</div>
+
+		<!-- Section Skills (Style sobre & natif sans emoji) -->
+		<div class="my-3 border border-gray-200/70 dark:border-gray-800/80 rounded-xl overflow-hidden bg-white/40 dark:bg-gray-900/40">
+			<!-- En-tête de la liste -->
+			<div class="flex items-center justify-between px-3 py-2 border-b border-gray-200/60 dark:border-gray-800/60 bg-gray-50/60 dark:bg-gray-850/60 text-xs">
+				<div class="flex items-center gap-2.5">
+					<span class="font-semibold text-gray-800 dark:text-gray-200">
+						Skills ({customSkills.length})
+					</span>
+
+					<!-- Filtres sobres -->
+					<div class="flex items-center gap-0.5 bg-gray-200/60 dark:bg-gray-800 p-0.5 rounded-lg text-[11px]">
+						<button
+							type="button"
+							class="px-2 py-0.5 rounded-md transition font-medium {skillFilter === 'all' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}"
+							on:click={() => (skillFilter = 'all')}
+						>
+							Tous
+						</button>
+						<button
+							type="button"
+							class="px-2 py-0.5 rounded-md transition font-medium {skillFilter === 'public' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}"
+							on:click={() => (skillFilter = 'public')}
+						>
+							Publics
+						</button>
+						<button
+							type="button"
+							class="px-2 py-0.5 rounded-md transition font-medium {skillFilter === 'private' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}"
+							on:click={() => (skillFilter = 'private')}
+						>
+							Privés
+						</button>
+					</div>
+				</div>
+
+				<button
+					type="button"
+					class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-medium transition"
+					on:click={() => {
+						editingCustomSkill = null;
+						showSkillBuilder = true;
+					}}
+				>
+					Nouveau Skill
+				</button>
+			</div>
+
+			<!-- Lignes de la liste -->
+			{#if filteredCustomSkills.length > 0}
+				<div class="divide-y divide-gray-100 dark:divide-gray-800/60">
+					{#each filteredCustomSkills as skill (skill.id)}
+						{@const isAccessible = canAccessSkill(skill, $user)}
+						{@const isManager = canManageSkill(skill, $user)}
+
+						<div class="flex items-center justify-between px-3 py-2.5 hover:bg-gray-50/70 dark:hover:bg-gray-850/40 transition group">
+							<div class="min-w-0 flex-1 pr-3">
+								<div class="flex items-center gap-2">
+									{#if isAccessible}
+										<button
+											type="button"
+											class="text-xs font-semibold text-gray-900 dark:text-gray-100 hover:underline truncate text-left"
+											on:click={() => {
+												sessionStorage.setItem('active_skill_context', JSON.stringify(skill));
+												goto('/?model=aria-code');
+											}}
+										>
+											{skill.name}
+										</button>
+									{:else}
+										<span class="text-xs font-semibold text-gray-500 dark:text-gray-400 truncate cursor-not-allowed">
+											{skill.name}
+										</span>
+									{/if}
+
+									<span class="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+										{skill.visibility === 'public' ? 'Public' : 'Privé'}
+									</span>
+
+									<span class="text-[11px] text-gray-400">
+										par {skill.user_name || 'Fondateur'}
+									</span>
+								</div>
+
+								<div class="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-xl mt-0.5">
+									{#if isAccessible}
+										{skill.description || 'Modèle personnalisé.'}
+									{:else}
+										Accès restreint. Ce modèle est privé et utilisable uniquement par son créateur.
+									{/if}
+								</div>
+							</div>
+
+							<!-- Actions sobres -->
+							<div class="flex items-center gap-1.5 shrink-0">
+								{#if isAccessible}
+									<button
+										type="button"
+										class="text-xs px-2.5 py-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+										on:click={() => {
+											sessionStorage.setItem('active_skill_context', JSON.stringify(skill));
+											goto('/?model=aria-code');
+										}}
+									>
+										Utiliser
+									</button>
+
+									{#if isManager}
+										<button
+											type="button"
+											class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
+											title="Modifier"
+											on:click={() => {
+												editingCustomSkill = skill;
+												showSkillBuilder = true;
+											}}
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+											</svg>
+										</button>
+										<button
+											type="button"
+											class="p-1 text-gray-400 hover:text-rose-500 transition"
+											title="Supprimer"
+											on:click={async () => {
+												if (confirm(`Supprimer le Skill "${skill.name}" ?`)) {
+													await deleteCustomSkill(skill.id);
+													toast.success(`Skill "${skill.name}" supprimé.`);
+													await refreshCustomSkills();
+												}
+											}}
+										>
+											<GarbageBin className="size-3.5" />
+										</button>
+									{/if}
+								{:else}
+									<span
+										class="text-xs px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none border border-dashed border-gray-300 dark:border-gray-700"
+										title="Accès restreint : Seul le créateur ou le fondateur peut utiliser ce Skill privé."
+									>
+										Bloqué (Privé)
+									</span>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<div class="py-6 text-center text-xs text-gray-400 dark:text-gray-500">
+					Aucun Skill trouvé.
+				</div>
+			{/if}
 		</div>
 
 		{#if models !== null}
@@ -909,7 +1122,7 @@
 				{#if total > 30}
 					<Pagination bind:page count={total} perPage={30} />
 				{/if}
-			{:else}
+			{:else if customSkills.length === 0}
 				<div class="flex w-full flex-col items-center justify-center py-16 pb-24">
 					<div class="max-w-sm text-center text-gray-900 dark:text-gray-100">
 						<div class="mb-1.5 text-sm">{$i18n.t('No models found')}</div>

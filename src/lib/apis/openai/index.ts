@@ -442,7 +442,12 @@ export const generateOpenAIChatCompletion = async (
 						try {
 							const jsonStr = trimmed.replace(/^data:\s*/, '');
 							const parsed = JSON.parse(jsonStr);
-							const delta = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.message?.content || '';
+							const delta =
+								parsed.choices?.[0]?.delta?.content ??
+								parsed.choices?.[0]?.delta?.reasoning_content ??
+								parsed.choices?.[0]?.delta?.reasoning ??
+								parsed.choices?.[0]?.message?.content ??
+								'';
 							fullContent += delta;
 						} catch {}
 					}
@@ -452,6 +457,20 @@ export const generateOpenAIChatCompletion = async (
 					.replace(/<think>[\s\S]*?<\/think>/gi, '')
 					.replace(/Here'?s a thinking process[\s\S]*?(?=(Salut|Bonjour|Hey|1\.|#|\n\n))/gi, '')
 					.trim();
+				// Extraction et enregistrement automatique de sous-agents si générés par l'IA
+				try {
+					const { extractAndRegisterSubagentsFromText } = await import('$lib/services/subagents/subagentManager');
+					const { createdSubagents } = extractAndRegisterSubagentsFromText(fullContent);
+					if (createdSubagents.length > 0) {
+						const { toast } = await import('svelte-sonner');
+						createdSubagents.forEach((s) => {
+							toast.success(`✨ Sous-agent "${s.name}" créé et disponible !`);
+						});
+					}
+				} catch (subErr) {
+					console.warn('Subagent auto-register error:', subErr);
+				}
+
 				return { choices: [{ message: { content: fullContent } }] };
 			} else {
 				try {

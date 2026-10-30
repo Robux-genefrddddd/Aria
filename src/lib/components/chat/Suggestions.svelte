@@ -60,20 +60,20 @@
 
 	const DEFAULT_SUGGESTIONS = [
 		{
-			title: ['Concept Roblox Studio', 'Fusion de tendances et GDD'],
-			content: 'Propose-moi une idee de jeu Roblox ultra detaillee en combinant les meilleures mecaniques de Fisch, Blox Fruits et Rivals, avec la boucle de jeu, la retention, la monetisation Robux et l\'architecture des scripts Luau.'
+			title: ['Roblox Studio Concept', 'Trending Mechanics & GDD'],
+			content: 'Propose an ultra-detailed Roblox game concept combining the best mechanics of Fisch, Blox Fruits, and Rivals, with core gameplay loop, retention hooks, Robux monetization, and Luau script architecture.'
 		},
 		{
-			title: ['Script Roblox Luau', 'Fly et Mouvement'],
-			content: 'Cree un script de Fly securise en Luau pour Roblox Studio avec RemoteEvent et verification serveur.'
+			title: ['Roblox Luau Script', 'Movement & Flying System'],
+			content: 'Create a secure Luau flight script for Roblox Studio with RemoteEvent validation and server-side anti-exploit.'
 		},
 		{
-			title: ['Economie et Boutique', 'Sauvegarde DataStore'],
-			content: 'Comment creer un systeme de boutique Roblox avec sauvegarde DataStore et protection contre la duplication ?'
+			title: ['Economy & Shop', 'DataStore Persistence'],
+			content: 'How do I build a secure Roblox shop system with DataStore session locking and duplication prevention?'
 		},
 		{
-			title: ['Combat et Hitbox', 'Optimisation Raycast'],
-			content: 'Ecris un systeme de combat Roblox optimise avec Hitbox Raycast cote client et validation serveur.'
+			title: ['Combat & Hitbox', 'Raycast Optimization'],
+			content: 'Write an optimized Roblox combat system using client-side Raycast hitboxes with server-side validation.'
 		}
 	];
 

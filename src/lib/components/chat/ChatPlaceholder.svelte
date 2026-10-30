@@ -54,7 +54,7 @@
 		>
 			<div>
 				<div class="line-clamp-1" in:fade={{ duration: 200 }}>
-					Bienvenue, {$user?.name || 'Utilisateur'}
+					{$i18n.t('Welcome, {{name}}', { name: $user?.name || 'Creator' })}
 				</div>
 
 				<div in:fade={{ duration: 200, delay: 200 }}>

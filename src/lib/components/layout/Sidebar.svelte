@@ -40,7 +40,6 @@
 
 	const i18n = getContext('i18n');
 
-	import TokenUsageMeter from '$lib/components/common/TokenUsageMeter.svelte';
 
 	$: canImportChats = $user?.role === 'admin' || ($user?.permissions?.chat?.import ?? true);
 
@@ -97,7 +96,7 @@
 	import MobileSwipePanel from '../common/MobileSwipePanel.svelte';
 
 	const BREAKPOINT = 768;
-	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
+	const DEFAULT_PINNED_ITEMS = ['notes', 'website-builder'];
 
 	let scrollTop = 0;
 
@@ -155,7 +154,13 @@
 		folderRegistry[folder.id]?.setFolderItems?.();
 	};
 
-	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
+	$: pinnedItems = (() => {
+		let items = ($settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS).filter((id) => id !== 'workspace');
+		if (!items.includes('website-builder')) {
+			items = [...items, 'website-builder'];
+		}
+		return items.filter((id) => id !== 'workspace');
+	})();
 
 	const isMenuItemVisible = (id) => {
 		switch (id) {
@@ -165,14 +170,9 @@
 					($user?.role === 'admin' || ($user?.permissions?.features?.notes ?? true))
 				);
 			case 'workspace':
-				return (
-					$user?.role === 'admin' ||
-					$user?.permissions?.workspace?.models ||
-					$user?.permissions?.workspace?.knowledge ||
-					$user?.permissions?.workspace?.prompts ||
-					$user?.permissions?.workspace?.tools ||
-					$user?.permissions?.workspace?.skills
-				);
+				return false;
+			case 'website-builder':
+				return true;
 			case 'automations':
 				return (
 					$config?.features?.enable_automations &&
@@ -194,6 +194,7 @@
 		const items = {
 			notes: { label: 'Notes', href: '/notes', iconType: 'note' },
 			workspace: { label: 'Workspace', href: '/workspace', iconType: 'workspace' },
+			'website-builder': { label: 'Website Builder', href: '/workspace/website-builder', iconType: 'website-builder' },
 			automations: { label: 'Automations', href: '/automations', iconType: 'automations' },
 			calendar: { label: 'Calendar', href: '/calendar', iconType: 'calendar' },
 			playground: { label: 'Playground', href: '/playground', iconType: 'playground' }
@@ -204,6 +205,7 @@
 	const menuItemPathPrefixes = {
 		notes: '/notes',
 		workspace: '/workspace',
+		'website-builder': '/workspace/website-builder',
 		calendar: '/calendar',
 		automations: '/automations',
 		playground: '/playground'
@@ -803,6 +805,7 @@
 
 		// Dispatch custom event to reset Chat component immediately
 		if (typeof window !== 'undefined') {
+			sessionStorage.removeItem('website_builder_active');
 			window.dispatchEvent(new CustomEvent('init-new-chat'));
 		}
 
@@ -814,6 +817,35 @@
 		if (window.location.pathname !== '/') {
 			await goto('/');
 		}
+	};
+
+	const websiteBuilderChatHandler = async (e?: MouseEvent) => {
+		if (e) e.preventDefault();
+		selectedChatId = null;
+		selectedFolder.set(null);
+		closeMobileSidebar();
+
+		if ($user?.role !== 'admin' && $user?.permissions?.chat?.temporary_enforced) {
+			await temporaryChatEnabled.set(true);
+		} else {
+			await temporaryChatEnabled.set(false);
+		}
+
+		await chatId.set('');
+		await chatTitle.set('');
+
+		if (typeof window !== 'undefined') {
+			sessionStorage.setItem('website_builder_active', 'true');
+			window.dispatchEvent(new CustomEvent('init-new-chat'));
+			window.dispatchEvent(new CustomEvent('set-website-builder-mode', { detail: { active: true } }));
+		}
+
+		const newChatBtn = document.getElementById('new-chat-button');
+		if (newChatBtn) {
+			newChatBtn.click();
+		}
+
+		await goto('/?model=aria-code&mode=website-builder');
 	};
 
 	const itemClickHandler = async () => {
@@ -1023,8 +1055,12 @@
 										on:click={async (e) => {
 											e.stopImmediatePropagation();
 											e.preventDefault();
-											goto(meta.href);
-											itemClickHandler();
+											if (itemId === 'website-builder') {
+												await websiteBuilderChatHandler();
+											} else {
+												goto(meta.href);
+												itemClickHandler();
+											}
 										}}
 										draggable="false"
 										aria-label={$i18n.t(meta.label)}
@@ -1041,6 +1077,12 @@
 												<NotesIcon className="size-4" strokeWidth="1.5" />
 											{:else if itemId === 'workspace'}
 												<WorkspaceIcon className="size-4" strokeWidth="1.5" />
+											{:else if itemId === 'website-builder'}
+												<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+													<rect width="18" height="18" x="3" y="3" rx="2"/>
+													<path d="M3 9h18"/>
+													<path d="M9 21V9"/>
+												</svg>
 											{:else if itemId === 'automations'}
 												<ClockIcon className="size-4" strokeWidth="1.5" />
 											{:else if itemId === 'calendar'}
@@ -1242,7 +1284,14 @@
 													: 'bg-black/[0.035] dark:bg-white/[0.045]'
 												: 'hover:bg-gray-50 dark:hover:bg-gray-900'}"
 											href={meta.href}
-											on:click={itemClickHandler}
+											on:click={async (e) => {
+												if (itemId === 'website-builder') {
+													e.preventDefault();
+													await websiteBuilderChatHandler();
+												} else {
+													itemClickHandler();
+												}
+											}}
 											draggable="false"
 											aria-label={$i18n.t(meta.label)}
 										>
@@ -1251,6 +1300,12 @@
 													<NotesIcon className="size-4" strokeWidth="1.5" />
 												{:else if itemId === 'workspace'}
 													<WorkspaceIcon className="size-4" strokeWidth="1.5" />
+												{:else if itemId === 'website-builder'}
+													<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+														<rect width="18" height="18" x="3" y="3" rx="2"/>
+														<path d="M3 9h18"/>
+														<path d="M9 21V9"/>
+													</svg>
 												{:else if itemId === 'automations'}
 													<ClockIcon className="size-4" strokeWidth="1.5" />
 												{:else if itemId === 'calendar'}
@@ -1260,10 +1315,15 @@
 												{/if}
 											</div>
 
-											<div class="flex self-center translate-y-[0.5px]">
+											<div class="flex self-center translate-y-[0.5px] items-center justify-between w-full pr-1">
 												<div class=" self-center text-[0.8125rem] leading-5">
 													{$i18n.t(meta.label)}
 												</div>
+												{#if meta.badge}
+													<span class="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+														{meta.badge}
+													</span>
+												{/if}
 											</div>
 										</a>
 									</div>
@@ -1682,24 +1742,6 @@
 						class=" sidebar-bg-gradient-to-t bg-linear-to-t from-gray-50 dark:from-gray-950 to-transparent from-50% pointer-events-none absolute inset-0 -z-10 -mt-6"
 					></div>
 					<div class="flex flex-col w-full">
-						<!-- Mode anti-conso : arrête la génération si l'onglet est fermé/masqué -->
-						<button
-							type="button"
-							class="flex items-center gap-2 w-full px-2 py-1 mb-1 rounded-lg text-xs transition hover:bg-gray-100 dark:hover:bg-gray-850 {($settings?.ariaAntiConso ?? true) ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}"
-							title="Mode anti-consommation : arrête la génération si vous quittez l'onglet"
-							on:click={() => {
-								settings.set({ ...$settings, ariaAntiConso: !($settings?.ariaAntiConso ?? true) });
-							}}
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-							</svg>
-							<span class="truncate">Mode anti-conso</span>
-							<div class="ml-auto flex-shrink-0 w-7 h-4 rounded-full relative transition-colors {($settings?.ariaAntiConso ?? true) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}">
-								<div class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform {($settings?.ariaAntiConso ?? true) ? 'translate-x-3' : 'translate-x-0'}"></div>
-							</div>
-						</button>
-						<TokenUsageMeter className="mb-2 px-1 w-full" />
 						{#if $user !== undefined && $user !== null}
 							<UserMenu
 								role={$user?.role}

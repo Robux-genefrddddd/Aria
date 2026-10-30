@@ -49,7 +49,7 @@ export const onAuthChange = (callback: (user: User | null) => void) =>
 
 const OWNER_UIDS = ['QH8wKG8nWZVtUQEy2pppuBuNZgC3'];
 
-/** Génère le paramètre d'authentification pour les requêtes REST Firebase Realtime Database */
+/** GÃ©nÃ¨re le paramÃ¨tre d'authentification pour les requÃªtes REST Firebase Realtime Database */
 export const getAuthParam = async (): Promise<string> => {
 	try {
 		if (auth.currentUser) {
@@ -66,17 +66,41 @@ export const getAuthParam = async (): Promise<string> => {
 	return '';
 };
 
-/** Récupère le rôle d'un utilisateur depuis Firebase (Custom Claims ou Realtime Database) */
-export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise<'owner' | 'admin' | 'beta_tester' | 'user' | string> => {
-	if (!firebaseUser?.uid || firebaseUser.uid === 'local-user-id' || firebaseUser.uid === 'anonymous') {
-		return 'user';
-	}
-	try {
-		if (OWNER_UIDS.includes(firebaseUser.uid) || firebaseUser?.email === 'mrpinpinpro@gmail.com') {
-			return 'owner';
-		}
+/** RÃ©cupÃ¨re le rÃ´le d'un utilisateur depuis Firebase (Custom Claims ou Realtime Database) */
+export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise<'owner' | 'admin' | 'beta_tester' | 'user' | 'pending' | string> => {
+	const uid = firebaseUser?.uid || firebaseUser?.id || (typeof firebaseUser === 'string' ? firebaseUser : '');
+	const email = (firebaseUser?.email || '').toLowerCase().trim();
 
-		// 1. Vérifier les custom claims du token Firebase
+	if (OWNER_UIDS.includes(uid) || email === 'mrpinpinpro@gmail.com' || email === 'contact@pincorpstudio.site') {
+		return 'owner';
+	}
+
+	// 1. Check local storage cache (if updated by admin in same app/session)
+	if (typeof window !== 'undefined') {
+		try {
+			if (uid) {
+				const directRole = localStorage.getItem('aria_role_' + uid);
+				if (directRole && directRole !== 'pending') return directRole;
+			}
+			const localRaw = localStorage.getItem('aria_registered_users');
+			if (localRaw) {
+				const users = JSON.parse(localRaw);
+				if (Array.isArray(users)) {
+					const matched = users.find((u) => (uid && u.id === uid) || (email && u.email?.toLowerCase() === email));
+					if (matched && matched.role && matched.role !== 'pending') {
+						return matched.role;
+					}
+				}
+			}
+		} catch (e) {}
+	}
+
+	if (!uid || uid === 'local-user-id' || uid === 'anonymous') {
+		return 'pending';
+	}
+
+	try {
+		// 2. Custom claims
 		if (typeof firebaseUser.getIdTokenResult === 'function') {
 			const tokenResult = await firebaseUser.getIdTokenResult(true);
 			if (
@@ -86,49 +110,63 @@ export const getUserRoleFromFirebase = async (firebaseUser: User | any): Promise
 			) {
 				return 'admin';
 			}
+			if (tokenResult.claims.role && tokenResult.claims.role !== 'pending') {
+				return tokenResult.claims.role;
+			}
 		}
 
 		const authParam = await getAuthParam();
 
-		// 2. Vérifier dans la Realtime Database Firebase (/users/{uid})
-		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}.json${authParam}`;
+		// 3. Check /users/{uid}.json
+		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`;
 		const res = await fetch(dbUrl);
 		if (res.ok) {
 			const data = await res.json();
 			if (data) {
-				if (typeof data === 'string') return data;
-				if (data.role) return data.role;
+				if (typeof data === 'string' && data !== 'pending') return data;
+				if (data.role && data.role !== 'pending') return data.role;
 				if (data.isAdmin === true || data.admin === true) return 'admin';
 			}
 		}
 
-		// 3. Vérifier directement dans (/users/{uid}/role.json)
-		const roleUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${firebaseUser.uid}/role.json${authParam}`;
+		// 4. Check /user_index/{uid}.json
+		const idxUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index/${uid}.json${authParam}`;
+		const idxRes = await fetch(idxUrl);
+		if (idxRes.ok) {
+			const idxData = await idxRes.json();
+			if (idxData) {
+				if (typeof idxData === 'string' && idxData !== 'pending') return idxData;
+				if (idxData.role && idxData.role !== 'pending') return idxData.role;
+			}
+		}
+
+		// 5. Check /users/{uid}/role.json
+		const roleUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}/role.json${authParam}`;
 		const roleRes = await fetch(roleUrl);
 		if (roleRes.ok) {
 			const roleData = await roleRes.json();
-			if (roleData) {
-				return typeof roleData === 'string' ? roleData : 'admin';
+			if (roleData && roleData !== 'pending') {
+				return typeof roleData === 'string' ? roleData : 'user';
 			}
 		}
 	} catch (e) {
 		console.warn('Could not fetch role from Firebase:', e);
 	}
 
-	return 'user';
+	return 'pending';
 };
 
-/** Enregistre/Synchronise de manière robuste l'utilisateur (Google, GitHub, Email) dans Firebase Realtime Database */
+/** Enregistre/Synchronise de maniÃ¨re robuste l'utilisateur (Google, GitHub, Email) dans Firebase Realtime Database */
 export const ensureFirebaseUserExists = async (firebaseUser: User | any, customName?: string): Promise<string> => {
-	if (!firebaseUser || !firebaseUser.uid) return 'user';
+	if (!firebaseUser || !firebaseUser.uid) return 'pending';
 
 	const uid = firebaseUser.uid;
 	const email = firebaseUser.email || `${uid}@aria.local`;
 	const displayName = customName || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Utilisateur');
 	const photoUrl = firebaseUser.photoURL || null;
 
-	let role = 'user';
-	if (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email.toLowerCase() === 'mrpinpinpro@gmail.com') {
+	let role = 'pending';
+	if (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || (email.toLowerCase() === 'mrpinpinpro@gmail.com' || email.toLowerCase() === 'contact@pincorpstudio.site')) {
 		role = 'owner';
 	}
 
@@ -148,7 +186,7 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 		payload.profile_image_url = photoUrl;
 	}
 
-	// 1. Enregistrement local immédiat (garantit la visibilité dans le panneau admin sur Vercel)
+	// 1. Enregistrement local immÃ©diat (garantit la visibilitÃ© dans le panneau admin sur Vercel)
 	if (typeof window !== 'undefined') {
 		try {
 			const localRaw = localStorage.getItem('aria_registered_users');
@@ -180,7 +218,7 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 			role = existingUser.role;
 			payload.role = role;
 		} else {
-			// Fallback: lire le rôle depuis user_index (modifiable par l'owner même sans règle write sur users/$uid)
+			// Fallback: lire le rÃ´le depuis user_index (modifiable par l'owner mÃªme sans rÃ¨gle write sur users/$uid)
 			try {
 				const idxRes = await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index/${uid}.json${authParam}`);
 				if (idxRes.ok) {
@@ -199,7 +237,7 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 			body: JSON.stringify(payload)
 		});
 
-		// 3. Écrire dans user_index (path écrit par chaque user lui-même → toujours autorisé)
+		// 3. Ã‰crire dans user_index (path Ã©crit par chaque user lui-mÃªme â†’ toujours autorisÃ©)
 		const indexEntry = {
 			name: payload.name,
 			email: payload.email,
@@ -223,7 +261,7 @@ export const ensureFirebaseUserExists = async (firebaseUser: User | any, customN
 	return role;
 };
 
-/** Enregistre les métadonnées de l'utilisateur dans Firebase Realtime Database */
+/** Enregistre les mÃ©tadonnÃ©es de l'utilisateur dans Firebase Realtime Database */
 export const saveUserToFirebaseDatabase = async (
 	uid: string,
 	userData: { email: string; name: string; role?: string }
@@ -244,7 +282,7 @@ export const saveUserToFirebaseDatabase = async (
 	}
 };
 
-/** Construit l'objet session Aria correspondant à l'utilisateur Firebase et l'enregistre en base */
+/** Construit l'objet session Aria correspondant Ã  l'utilisateur Firebase et l'enregistre en base */
 export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name?: string) => {
 	const token = await firebaseUser.getIdToken();
 	
@@ -259,7 +297,7 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 		localStorage.setItem('aria_profile_image_url', firebaseUser.photoURL);
 	}
 
-	// Récupérer la limite de tokens et l'historique de consommation
+	// RÃ©cupÃ©rer la limite de tokens et l'historique de consommation
 	let userTokenLimit: number | null = null;
 	let userTokens: any = null;
 	try {
@@ -311,7 +349,7 @@ export const createAriaSessionFromFirebaseUser = async (firebaseUser: User, name
 	return sessionUser;
 };
 
-/** Récupère les paramètres utilisateur enregistrés dans Firebase Realtime Database */
+/** RÃ©cupÃ¨re les paramÃ¨tres utilisateur enregistrÃ©s dans Firebase Realtime Database */
 export const getFirebaseUserSettings = async (uid?: string): Promise<Record<string, any>> => {
 	const currentUid = uid || auth.currentUser?.uid || localStorage.getItem('aria_uid');
 	if (!currentUid) {
@@ -341,20 +379,20 @@ export const getFirebaseUserSettings = async (uid?: string): Promise<Record<stri
 	return cached ? JSON.parse(cached) : { ui: {} };
 };
 
-/** Enregistre les paramètres utilisateur dans Firebase Realtime Database */
+/** Enregistre les paramÃ¨tres utilisateur dans Firebase Realtime Database */
 export const saveFirebaseUserSettings = async (
 	settings: Record<string, any>,
 	uid?: string
 ): Promise<Record<string, any>> => {
 	const currentUid = uid || auth.currentUser?.uid || localStorage.getItem('aria_uid');
 
-	// Enregistrement local immédiat
+	// Enregistrement local immÃ©diat
 	localStorage.setItem('aria_user_settings', JSON.stringify(settings));
 	if (currentUid) {
 		localStorage.setItem(`aria_user_settings_${currentUid}`, JSON.stringify(settings));
 	}
 
-	// Persistance directe du thème
+	// Persistance directe du thÃ¨me
 	if (settings?.ui?.theme) {
 		localStorage.setItem('theme', settings.ui.theme);
 	}
@@ -378,7 +416,7 @@ export const saveFirebaseUserSettings = async (
 	return settings;
 };
 
-/** Récupère la liste de tous les utilisateurs (Firebase RTDB + LocalStorage) */
+/** RÃ©cupÃ¨re la liste de tous les utilisateurs (Firebase RTDB + LocalStorage) */
 export const getFirebaseAllUsers = async (): Promise<any[]> => {
 	const usersMap = new Map<string, any>();
 
@@ -398,7 +436,7 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 	}
 
 	// 2. Charger les utilisateurs depuis Firebase RTDB
-	// Essai 1 : lecture directe de /users.json (nécessite règle owner dans Firebase Rules)
+	// Essai 1 : lecture directe de /users.json (nÃ©cessite rÃ¨gle owner dans Firebase Rules)
 	try {
 		const authParam = await getAuthParam();
 		const dbUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users.json${authParam}`;
@@ -410,8 +448,8 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 					const cleanUser = {
 						id: uid,
 						name: u?.name || (u?.email ? u.email.split('@')[0] : 'Utilisateur'),
-						email: u?.email || (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ? 'contact@pincorpsstudio.site' : 'user@aria.local'),
-						role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || u?.email?.toLowerCase() === 'mrpinpinpro@gmail.com') ? 'owner' : (u?.role || (u?.admin ? 'admin' : 'user')),
+						email: u?.email || (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ? 'contact@pincorpstudio.site' : 'user@aria.local'),
+						role: (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || (u?.email?.toLowerCase() === 'mrpinpinpro@gmail.com' || u?.email?.toLowerCase() === 'contact@pincorpstudio.site')) ? 'owner' : (u?.role || (u?.admin ? 'admin' : 'user')),
 						profile_image_url: u?.profile_image_url || '/User.avif',
 						created_at: u?.created_at || (u?.createdAt ? Math.floor(u.createdAt / 1000) : Math.floor(Date.now() / 1000) - 86400 * 7),
 						last_active_at: u?.last_active_at || (u?.updatedAt ? Math.floor(u.updatedAt / 1000) : Math.floor(Date.now() / 1000)),
@@ -426,7 +464,7 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 		console.warn('Failed to fetch users from Firebase:', e);
 	}
 
-	// Essai 2 : lire depuis user_index (path public écrit par chaque user à son login)
+	// Essai 2 : lire depuis user_index (path public Ã©crit par chaque user Ã  son login)
 	if (usersMap.size <= 1) {
 		try {
 			const authParam = await getAuthParam();
@@ -454,12 +492,12 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 		} catch (e) {}
 	}
 
-	// 3. Toujours inclure l'utilisateur actuel s'il est connecté
+	// 3. Toujours inclure l'utilisateur actuel s'il est connectÃ©
 	if (auth.currentUser) {
 		const u = auth.currentUser;
 		const uid = u.uid;
 		const email = u.email || 'mrpinpinpro@gmail.com';
-		const role = (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || email.toLowerCase() === 'mrpinpinpro@gmail.com') ? 'owner' : 'admin';
+		const role = (uid === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' || (email.toLowerCase() === 'mrpinpinpro@gmail.com' || email.toLowerCase() === 'contact@pincorpstudio.site')) ? 'owner' : 'admin';
 		if (!usersMap.has(uid)) {
 			usersMap.set(uid, {
 				id: uid,
@@ -477,7 +515,7 @@ export const getFirebaseAllUsers = async (): Promise<any[]> => {
 	return Array.from(usersMap.values());
 };
 
-/** Met à jour le rôle d'un utilisateur dans Firebase Realtime Database & LocalStorage */
+/** Met Ã  jour le rÃ´le d'un utilisateur dans Firebase Realtime Database & LocalStorage */
 export const updateFirebaseUserRole = async (uid: string, role: string) => {
 	if (typeof window !== 'undefined') {
 		try {
@@ -496,13 +534,13 @@ export const updateFirebaseUserRole = async (uid: string, role: string) => {
 	}
 	try {
 		const authParam = await getAuthParam();
-		// Écrire dans users/${uid} (nécessite règle owner dans Firebase Rules)
+		// Ã‰crire dans users/${uid} (nÃ©cessite rÃ¨gle owner dans Firebase Rules)
 		await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${uid}.json${authParam}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ role, updatedAt: Date.now() })
 		});
-		// Écrire aussi dans user_index/${uid} (l'owner peut écrire via règle owner)
+		// Ã‰crire aussi dans user_index/${uid} (l'owner peut Ã©crire via rÃ¨gle owner)
 		await fetch(`https://vostockfr-3b08c-default-rtdb.firebaseio.com/user_index/${uid}.json${authParam}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -526,7 +564,7 @@ export const deleteFirebaseUser = async (uid: string) => {
 	}
 };
 
-/** Met à jour les informations d'un utilisateur dans Firebase Realtime Database */
+/** Met Ã  jour les informations d'un utilisateur dans Firebase Realtime Database */
 export const updateFirebaseUser = async (uid: string, updates: Record<string, any>) => {
 	try {
 		const authParam = await getAuthParam();
@@ -541,7 +579,7 @@ export const updateFirebaseUser = async (uid: string, updates: Record<string, an
 	}
 };
 
-/** Abonnement temps réel instantané (SSE Push) aux données de l'utilisateur dans Firebase */
+/** Abonnement temps rÃ©el instantanÃ© (SSE Push) aux donnÃ©es de l'utilisateur dans Firebase */
 export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) => {
 	if (typeof window === 'undefined' || !uid) return () => {};
 
@@ -550,8 +588,11 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 
 	let es: EventSource | null = null;
 	let interval: any = null;
+	let reconnectTimer: any = null;
+	let isClosed = false;
 
 	const connect = async () => {
+		if (isClosed) return;
 		try {
 			const authParam = await getAuthParam();
 			const url = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${effectiveUid}.json${authParam}`;
@@ -583,7 +624,12 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 
 			es.onerror = () => {
 				es?.close();
-				setTimeout(connect, 4000);
+				if (!isClosed && !reconnectTimer) {
+					reconnectTimer = setTimeout(() => {
+						reconnectTimer = null;
+						if (!isClosed) connect();
+					}, 5000);
+				}
 			};
 		} catch (e) {
 			console.warn('SSE subscribe failed:', e);
@@ -594,6 +640,7 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 
 	// Filet de sécurité (toutes les 60 secondes, SSE gère le live)
 	interval = setInterval(async () => {
+		if (isClosed) return;
 		try {
 			const authParam = await getAuthParam();
 			const res = await fetch(
@@ -607,12 +654,14 @@ export const subscribeToUserLive = (uid: string, onUpdate: (data: any) => void) 
 	}, 60000);
 
 	return () => {
+		isClosed = true;
+		if (reconnectTimer) clearTimeout(reconnectTimer);
 		es?.close();
 		clearInterval(interval);
 	};
 };
 
-/** Enregistre la consommation de tokens par date et par modèle dans Firebase Realtime Database */
+/** Enregistre la consommation de tokens par date et par modÃ¨le dans Firebase Realtime Database */
 export const recordFirebaseTokenUsage = async (uid: string | undefined, tokensCount: number, modelId?: any) => {
 	const targetUid = getResolvedUid(uid);
 	if (!targetUid || targetUid === 'anonymous' || !tokensCount || tokensCount <= 0) return;
@@ -690,7 +739,7 @@ export const saveFirebaseUserChats = async (uid: string | undefined, chats: any[
 	}
 };
 
-/** Récupère la liste des conversations de l'utilisateur depuis Firebase Realtime Database */
+/** RÃ©cupÃ¨re la liste des conversations de l'utilisateur depuis Firebase Realtime Database */
 export const fetchFirebaseUserChats = async (uid?: string): Promise<any[]> => {
 	const targetUid = getResolvedUid(uid);
 	try {
@@ -725,7 +774,7 @@ export const saveFirebaseSingleChat = async (uid: string | undefined, id: string
 	}
 };
 
-/** Récupère le contenu complet d'une conversation depuis Firebase Realtime Database */
+/** RÃ©cupÃ¨re le contenu complet d'une conversation depuis Firebase Realtime Database */
 export const fetchFirebaseSingleChat = async (uid: string | undefined, id: string): Promise<any | null> => {
 	const targetUid = getResolvedUid(uid);
 	if (!id) return null;
@@ -755,3 +804,19 @@ export const deleteFirebaseSingleChat = async (uid: string | undefined, id: stri
 };
 
 
+
+/** Supprime toutes les conversations de Firebase Realtime Database */
+export const deleteFirebaseAllChats = async (uid?: string) => {
+	const targetUid = getResolvedUid(uid);
+	try {
+		const authParam = await getAuthParam();
+		const chatsUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats.json${authParam}`;
+		const chatsDataUrl = `https://vostockfr-3b08c-default-rtdb.firebaseio.com/users/${targetUid}/chats_data.json${authParam}`;
+		await Promise.all([
+			fetch(chatsUrl, { method: 'DELETE' }),
+			fetch(chatsDataUrl, { method: 'DELETE' })
+		]);
+	} catch (e) {
+		console.warn('Failed to delete all chats from Firebase:', e);
+	}
+};

@@ -99,7 +99,10 @@
 			} catch (e) {}
 		}
 
-		toast.success($i18n.t('User updated successfully'));
+		const roleChanged = _user.role !== selectedUser.role;
+		if (!roleChanged) {
+			toast.success($i18n.t('User updated successfully'));
+		}
 		dispatch('save');
 		show = false;
 	};

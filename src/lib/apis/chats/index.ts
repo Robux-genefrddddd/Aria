@@ -1309,13 +1309,25 @@ export const deleteTagById = async (token: string, id: string, tagName: string) 
 
 export const deleteAllChats = async (token: string) => {
 	try {
-		const { saveFirebaseUserChats } = await import('$lib/firebase');
-		await saveFirebaseUserChats(undefined, []);
+		const { saveFirebaseUserChats, deleteFirebaseAllChats } = await import('$lib/firebase');
+		await Promise.all([
+			saveFirebaseUserChats(undefined, []),
+			deleteFirebaseAllChats(undefined)
+		]);
 		if (typeof window !== 'undefined') {
 			localStorage.removeItem('aria_local_chats');
+			const keysToRemove: string[] = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (key && key.startsWith('aria_chat_')) {
+					keysToRemove.push(key);
+				}
+			}
+			keysToRemove.forEach((k) => localStorage.removeItem(k));
 		}
 		return true;
 	} catch (e) {
+		console.warn('Error in deleteAllChats:', e);
 		return false;
 	}
 };

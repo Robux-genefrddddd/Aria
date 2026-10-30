@@ -15,6 +15,7 @@
 	import Interface from './Settings/Interface.svelte';
 	import Notifications from './Settings/Notifications.svelte';
 	import Shortcuts from './Settings/Shortcuts.svelte';
+	import Status from './Settings/Status.svelte';
 	import Audio from './Settings/Audio.svelte';
 	import DataControls from './Settings/DataControls.svelte';
 	import Usage from './Settings/Usage.svelte';
@@ -359,18 +360,18 @@
 			]
 		},
 		{
-			id: 'shortcuts',
-			title: 'Keyboard',
+			id: 'status',
+			title: 'Status',
 			keywords: [
-				'commands',
-				'hotkeys',
-				'keyboard',
-				'keyboard shortcuts',
-				'keybindings',
-				'keys',
-				'shortcut',
-				'shortcuts',
-				'show shortcuts'
+				'status',
+				'statut',
+				'health',
+				'service status',
+				'crashes',
+				'incidents',
+				'bugs',
+				'etat',
+				'systeme'
 			]
 		},
 		{
@@ -1018,18 +1019,20 @@
 							<AppNotification className="size-3.5" strokeWidth="2" />
 							<span>{$i18n.t('Notifications')}</span>
 						</button>
-					{:else if tabId === 'shortcuts'}
+					{:else if tabId === 'status'}
 						<button
 							role="tab"
-							aria-controls="tab-shortcuts"
-							aria-selected={selectedTab === 'shortcuts'}
-							class={tabButtonClass(selectedTab === 'shortcuts')}
+							aria-controls="tab-status"
+							aria-selected={selectedTab === 'status'}
+							class={tabButtonClass(selectedTab === 'status')}
 							on:click={() => {
-								selectedTab = 'shortcuts';
+								selectedTab = 'status';
 							}}
 						>
-							<Keyboard className="size-3.5" strokeWidth="2" />
-							<span>{$i18n.t('Keyboard')}</span>
+							<svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+							</svg>
+							<span>{$i18n.t('Status')}</span>
 						</button>
 					{:else if tabId === 'connections'}
 						{#if $user?.role === 'admin' || ($user?.role === 'user' && $config?.features?.enable_direct_connections)}
@@ -1217,8 +1220,8 @@
 				/>
 			{:else if selectedTab === 'notifications'}
 				<Notifications {saveSettings} />
-			{:else if selectedTab === 'shortcuts'}
-				<Shortcuts {saveSettings} />
+			{:else if selectedTab === 'status'}
+				<Status />
 			{:else if selectedTab === 'connections'}
 				<Connections
 					saveSettings={async (updated: Record<string, any>) => {

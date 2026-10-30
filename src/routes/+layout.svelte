@@ -1185,10 +1185,12 @@
 		// Initialize i18n even if we didn't get a backend config,
 		// so `/error` can show something that's not `undefined`.
 
-		initI18n(localStorage?.locale);
-		if (!localStorage.locale) {
-			localStorage.locale = 'fr-FR';
+		// Default interface language set to English (en-US)
+		if (!localStorage.locale || localStorage.locale === 'fr-FR') {
+			localStorage.locale = 'en-US';
 		}
+		initI18n(localStorage.locale);
+		changeLanguage(localStorage.locale);
 
 		// Ensure splash screen is removed immediately so UI renders smoothly
 		setTimeout(() => {

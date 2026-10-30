@@ -172,7 +172,7 @@
 	let askUserAllowOther = true;
 	let askUserTimeoutMs: number | null = null;
 
-	let selectedModels = [''];
+	let selectedModels = ['aria-basic'];
 	let atSelectedModel: Model | undefined;
 	let selectedModelIds = [];
 	$: if (atSelectedModel !== undefined) {
@@ -201,7 +201,7 @@
 			normalized = defaultModels.filter((modelId) => availableModels.includes(modelId));
 		}
 		if (normalized.length === 0) {
-			normalized = availableModels.length > 0 ? [availableModels[0]] : [''];
+			normalized = availableModels.length > 0 ? [availableModels[0]] : ['aria-basic'];
 		}
 
 		return normalized;
@@ -215,6 +215,7 @@
 		userRole === 'beta-tester' ||
 		userRole === 'tester' ||
 		userRole === 'beta' ||
+		userRole === 'user' ||
 		$user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ||
 		$user?.email?.toLowerCase() === 'mrpinpinpro@gmail.com';
 
@@ -227,7 +228,7 @@
 			if ($settings?.models?.some((m) => ['aria-plus', 'aria-code'].includes(m))) {
 				settings.set({ ...$settings, models: ['aria-basic'] });
 			}
-			toast.warning($i18n.t('Accès réservé : Ce modèle nécessite le rôle Bêta-Testeur.'));
+			// beta toast removed
 		}
 	}
 
@@ -246,6 +247,16 @@
 				selectedModels = fallbackModels;
 			}
 		}
+	}
+
+	let websiteBuilderMode = false;
+	$: isWebsiteBuilderMode =
+		websiteBuilderMode ||
+		$page.url.searchParams.get('mode') === 'website-builder' ||
+		(typeof window !== 'undefined' && sessionStorage.getItem('website_builder_active') === 'true');
+
+	$: if (isWebsiteBuilderMode && (!selectedModels || !selectedModels.includes('aria-code'))) {
+		selectedModels = ['aria-code'];
 	}
 
 	const estimateTokens = (value) => {
@@ -1549,7 +1560,23 @@
 		loading = true;
 		window.addEventListener('message', onMessageHandler);
 		window.addEventListener('init-new-chat', initNewChat);
-		window.addEventListener('aria:anti-conso-stop', () => { if (generating) stopResponse(false); });
+
+		const handleWebsiteBuilderMode = (e: any) => {
+			websiteBuilderMode = e?.detail?.active ?? true;
+			selectedModels = ['aria-code'];
+		};
+		window.addEventListener('set-website-builder-mode', handleWebsiteBuilderMode);
+
+		const handleElementClickInstruction = (e: any) => {
+			if (e?.detail?.instruction) {
+				prompt = e.detail.instruction;
+				tick().then(() => {
+					messageInput?.focus?.();
+				});
+			}
+		};
+		window.addEventListener('website-builder-element-clicked', handleElementClickInstruction);
+
 		$socket?.on('events', chatEventHandler);
 		$socket?.on('connect', handleSocketConnect);
 
@@ -1641,8 +1668,9 @@
 				chatId.set('');
 				chatTitle.set('');
 
-				window.removeEventListener('aria:anti-conso-stop', () => {});
 				window.removeEventListener('message', onMessageHandler);
+				window.removeEventListener('set-website-builder-mode', handleWebsiteBuilderMode);
+				window.removeEventListener('website-builder-element-clicked', handleElementClickInstruction);
 				$socket?.off('events', chatEventHandler);
 				$socket?.off('connect', handleSocketConnect);
 				dismissContextCompactionToast();
@@ -1958,29 +1986,40 @@
 
 				if (htmlGroups && htmlGroups.length > 0) {
 					htmlGroups.forEach((group) => {
-						const renderedContent = `
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-							<${''}style>
-								body {
-									background-color: white; /* Ensure the iframe has a white background */
-								}
-
-								${group.css}
-							</${''}style>
-                        </head>
-                        <body>
-                            ${group.html}
-
-							<${''}script>
-                            	${group.js}
-							</${''}script>
-                        </body>
-                        </html>
-                    `;
+						const scriptStart = '<' + 'script';
+						const scriptEnd = '<' + '/script>';
+						const styleStart = '<' + 'style>';
+						const styleEnd = '<' + '/style>';
+						const renderedContent = [
+							'<!DOCTYPE html>',
+							'<html lang="fr">',
+							'<head>',
+							'  <meta charset="UTF-8">',
+							'  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+							'  ' + scriptStart + ' src="https://cdn.tailwindcss.com">' + scriptEnd,
+							'  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />',
+							'  ' + scriptStart + ' src="https://unpkg.com/lucide@latest">' + scriptEnd,
+							'  ' + styleStart,
+							'    body {',
+							'      background-color: #09090b;',
+							'      color: #f4f4f5;',
+							'      margin: 0;',
+							'      padding: 0;',
+							'    }',
+							group.css,
+							'  ' + styleEnd,
+							'</head>',
+							'<body>',
+							group.html,
+							'  ' + scriptStart + '>',
+							group.js,
+							'    if (typeof window !== "undefined" && window.lucide) {',
+							'      window.lucide.createIcons();',
+							'    }',
+							'  ' + scriptEnd,
+							'</body>',
+							'</html>'
+						].join('\n');
 						contents = [...contents, { type: 'iframe', content: renderedContent }];
 					});
 				} else {
@@ -3034,6 +3073,10 @@
 	};
 
 	const submitHandler = async (userPrompt, { _raw = false } = {}) => {
+		if (typeof userPrompt === 'string' && /aria[\s-_]?code/i.test(userPrompt)) {
+			selectedModels = ['aria-code'];
+		}
+
 		const _selectedModels = selectedModels.map((modelId) =>
 			$models.map((m) => m.id).includes(modelId) ? modelId : ''
 		);
@@ -3603,17 +3646,6 @@
 			`${WEBUI_BASE_URL}/api`
 		);
 
-		// Initialize Web Search Status Indicator
-		responseMessage.statusHistory = [
-			{
-				action: 'web_search',
-				description: 'Recherche Web : Roblox DevForum, actualites et tendances des jeux...',
-				done: false
-			}
-		];
-		history.messages[responseMessageId] = responseMessage;
-		history = history;
-
 		const res = await chatCompletionPromise.catch(async (error) => {
 			const safeMessage = sanitizeErrorMessage(error);
 			toast.error(safeMessage);
@@ -3630,22 +3662,29 @@
 			if (res.choices && res.choices[0]?.message?.content) {
 				const fullContent = res.choices[0].message.content;
 				
-				// Mark web search as completed
-				responseMessage.statusHistory = [
-					{
-						action: 'web_search',
-						description: 'Recherche Web terminee (Roblox DevForum et meta analysées)',
-						done: true
-					}
-				];
-				history.messages[responseMessageId] = responseMessage;
-				history = history;
-
-				// Animated typewriter streaming effect
+				// Fast fluid streaming effect (no fake web search delay, fast chunking)
+				const isCodeOrHtml = fullContent.includes('```html') || fullContent.includes('<!DOCTYPE html>') || fullContent.includes('```');
+				const stepSize = isCodeOrHtml ? Math.max(120, Math.floor(fullContent.length / 20)) : 12;
 				let charIndex = 0;
 				const timer = setInterval(async () => {
-					charIndex = Math.min(fullContent.length, charIndex + Math.floor(Math.random() * 3) + 2);
+					charIndex = Math.min(fullContent.length, charIndex + stepSize);
 					responseMessage.content = fullContent.slice(0, charIndex);
+
+					if (fullContent.includes('<create_subagent>')) {
+						const isClosed = fullContent.includes('</create_subagent>');
+						const endIdx = isClosed ? fullContent.indexOf('</create_subagent>') + 18 : Infinity;
+						if (charIndex < endIdx) {
+							responseMessage.status = {
+								description: "Création en cours d'un sous-agent...",
+								done: false
+							};
+						} else {
+							responseMessage.status = {
+								description: "Sous-agent spécialisé déployé",
+								done: true
+							};
+						}
+					}
 					history.messages[responseMessageId] = responseMessage;
 					history = history;
 
@@ -3668,6 +3707,11 @@
 							}
 						}
 						if (quickReplies.length > 0) {
+							// Guarantee an 'Autre / Proposer mon idée' button is always available when options are presented
+							const hasOther = quickReplies.some((r) => /autre|sur-mesure|personnalis|custom|libre/i.test(r));
+							if (!hasOther && quickReplies.length >= 2) {
+								quickReplies.push('Autre / Proposer mon idée');
+							}
 							responseMessage.followUps = quickReplies;
 							// Strip the [[...]] markers from displayed content for cleanliness
 							responseMessage.content = fullContent.replace(/\[\[([^\]]{2,120})\]\]/g, '**$1**');

@@ -10,13 +10,13 @@ This is the guided workflow for building a complete Roblox game from scratch. It
 
 ---
 
-## Step 1: Genre Detection
+## Step 1: Genre Detection & Creative Ideation
 
-Attempt to detect the game genre automatically from the user's message. If detection fails, ask via multiple choice.
+Analyze the user's intent. Never box the user into a rigid pigeonhole or force them to choose among generic options without creative freedom. When proposing or clarifying game ideas, always provide clear classic options, trending hybrid suggestions, and explicit paths for **Custom / Bespoke Concepts** and **Collaborative Brainstorming**.
 
 ### Keyword Matching
 
-Scan the user's message for these keywords (case-insensitive). Match the first genre that hits:
+Scan the user's message for these keywords (case-insensitive):
 
 | Genre | Keywords |
 |---|---|
@@ -29,41 +29,71 @@ Scan the user's message for these keywords (case-insensitive). Match the first g
 
 ### If Detected
 
-Confirm with the user:
+Acknowledge the detected genre, but do NOT lock them in. Offer to proceed, enrich the concept with unique twists, or pivot to something else:
 
-> I detected **{Genre}** from your description. I will use the {Genre} template to structure your game. Does that sound right, or would you prefer a different genre?
+> J'ai détecté un concept de type **{Genre}** d'après votre description !
+> 
+> Souhaitez-vous :
+> 1. **Fonder le jeu sur ce modèle éprouvé ({Genre})** avec les meilleures mécaniques actuelles.
+> 2. **Injecter une mécanique hybride ou originale** (ex: ajouter du roguelite, un système de crafting émergent, ou une tension multijoueur asymétrique).
+> 3. **Partir sur une tout autre idée / Concept sur-mesure** (décrivez ce que vous imaginez, même une ébauche !).
+> 4. **Faire un brainstorming créatif** : je vous propose 3 concepts novateurs et stimulants inspirés de votre idée.
 
-Proceed to Step 2 on confirmation.
+### If Not Detected (Ideation & Discovery)
 
-### If Not Detected
+Present an inspiring, structured menu that gives equal weight to classic genres, modern hybrids, and open custom creation:
 
-Present a multiple-choice prompt:
-
-> What type of game are you building?
+> 🎮 **Quel univers ou gameplay souhaitez-vous créer ?**
 >
-> 1. **Simulator** -- Click, collect, upgrade, rebirth loops
-> 2. **Tycoon** -- Build a base/factory, earn currency, expand
-> 3. **Obby** -- Obstacle course with stages/checkpoints
-> 4. **RPG** -- Quests, combat, leveling, story-driven adventure
-> 5. **Horror** -- Atmospheric scares, survival, escape scenarios
-> 6. **Battle Royale** -- PvP combat, last player/team standing
-> 7. **Custom** -- I have something unique in mind (describe it)
+> **Piliers Incontournables :**
+> 1. ⚡ **Simulator** -- Boucle addictive : clic/action, collecte frénétique, multiplicateurs & rebirths
+> 2. 🏭 **Tycoon** -- Bâtisseur d'empire : base automatisée, production de ressources, expansions progressives
+> 3. 🏃 **Obby Dynamique** -- Course d'obstacles : physique soignée, checkpoints, mécaniques de parkour innovantes
+> 4. ⚔️ **RPG / Aventure** -- Quêtes épiques, donjons, progression de classes, combat stratégique
+> 5. 🕯️ **Horreur & Survie** -- Atmosphère oppressante, entités imprévisibles, énigmes diégétiques, évasion sous tension
+> 6. 🏆 **Battle Royale / PvP Arena** -- Combats nerveux, zone rétrécissante, loot tactique, dernier survivant
+>
+> **Concepts Hybrides & Tendance :**
+> 7. 🔮 **Hybride Innovant** -- Ex: *Roguelite Tycoon* (gestion + expéditions), *Horreur Asymétrique* (traître/enquête), *Sandbox Physique Tactile*
+>
+> **Liberté Totale & Co-Création :**
+> 8. ✨ **Autre / Idée Sur-Mesure** -- Vous avez votre propre vision, un gameplay original ou un univers précis en tête ? Décrivez-le librement !
+> 9. 💡 **Brainstorming / Surprends-moi** -- Laissez-moi analyser les tendances Roblox et vous concevoir 3 concepts uniques, viraux et captivants prêts à coder.
 
-If the user selects **Custom**, skip genre-specific templates in Step 2 and use only the universal scaffold. Gather a short description of their concept to inform architecture decisions.
+---
+
+### Handling "Autre / Custom" & "Brainstorming" (Co-Design Protocol)
+
+When the user chooses **Autre**, describes an unconventional idea, or asks for **Brainstorming**:
+
+1. **Active Listening & Enthusiastic Validation**:
+   - Highlight what makes their premise exciting.
+   - Use high-level game design vocabulary (boucle primaire, dopamine loop, game feel, affordance, tension/résolution, rétention D1/D7).
+
+2. **The 3 Co-Design Pillars (Clarify in 1 concise message)**:
+   - **Hook & Boucle Centrale (0-15s)** : Quelle est l'action moment-to-moment qui procure une satisfaction immédiate ?
+   - **Moteur de Progression (10-30 min)** : Quels sont les jalons de session (débloquages, cosmétiques, stats, zones) ?
+   - **Direction Artistique & Game Feel (Juice)** : Quelle identité visuelle et sonore (particules, screen shake, audio spatialisé) ?
+
+3. **Provide 2-3 Creative Enhancements**:
+   - Propose innovative synergy ideas to make the project stand out on the Roblox algorithm.
+
+4. **Select Template**:
+   - For any bespoke, hybrid, or custom game, route to `templates/genre-custom.md` + `templates/game-scaffold.md`.
 
 ---
 
 ## Step 2: Load Genre Template
 
-Load the appropriate template files based on the detected genre.
+Load the appropriate template files based on the detected or chosen genre.
 
 ### Always Load
 
 Read `templates/game-scaffold.md` -- this contains the universal base structure that every game needs:
 - Folder hierarchy (ServerScriptService, ReplicatedStorage, etc.)
-- DataManager boilerplate
-- Remote event setup
-- Loading screen
+- DataManager boilerplate (ProfileService/ProfileStore session locking)
+- Remote event setup & rate-limiting architecture
+- Loading screen & initial handshake
 - Core configuration module
 
 ### Genre-Specific Load
@@ -78,16 +108,16 @@ Read the genre template based on the detected type:
 | RPG | `templates/genre-rpg.md` |
 | Horror | `templates/genre-horror.md` |
 | Battle Royale | `templates/genre-battle-royale.md` |
-| Custom | No genre template -- use only the scaffold |
+| Custom / Hybride / Autre | `templates/genre-custom.md` |
 
 ### What to Extract
 
 From the loaded templates, identify:
-- **Core systems** -- the modules that define this genre's gameplay
-- **Required RemoteEvents** -- client-server communication channels
-- **Data schema** -- what player data needs to be saved
-- **UI screens** -- what ScreenGuis are needed
-- **Workspace layout** -- what the 3D world needs (spawn points, arenas, stages, etc.)
+- **Core systems** -- the modular services and controllers defining gameplay
+- **Required RemoteEvents / RemoteFunctions** -- typed, rate-limited channels
+- **Data schema** -- resilient player data structure with default values
+- **UI screens** -- responsive ScreenGuis with TweenService/Spring transitions
+- **Workspace layout** -- 3D anchors, interactive triggers, arenas, spawns
 
 ---
 

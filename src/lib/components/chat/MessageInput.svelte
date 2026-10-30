@@ -78,6 +78,7 @@
 
 	import ToolServersModal from './ToolServersModal.svelte';
 	import SkillsModal from './SkillsModal.svelte';
+	import SubagentsModal from './SubagentsModal.svelte';
 
 	import RichTextInput from '../common/RichTextInput.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
@@ -676,6 +677,7 @@
 
 	let showTools = false;
 	let showSkills = false;
+	let showSubagents = false;
 
 	let loaded = false;
 	let recording = false;
@@ -791,9 +793,17 @@
 					($settings?.terminalServers ?? []).some((s) => s.url))));
 
 	let toggleFilters = [];
-	$: toggleFilters = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels)
-		.map((id) => ($models.find((model) => model.id === id) || {})?.filters ?? [])
-		.reduce((acc, filters) => acc.filter((f1) => filters.some((f2) => f2.id === f1.id)));
+	$: {
+		const modelList = (atSelectedModel?.id ? [atSelectedModel.id] : (selectedModels ?? [])).filter(Boolean);
+		if (modelList.length === 0) {
+			toggleFilters = [];
+		} else {
+			const filterArrays = modelList.map((id) => ($models.find((model) => model.id === id) || {})?.filters ?? []);
+			toggleFilters = filterArrays.length > 0
+				? filterArrays.reduce((acc, filters) => (acc ?? []).filter((f1) => (filters ?? []).some((f2) => f2.id === f1.id)), filterArrays[0] ?? [])
+				: [];
+		}
+	}
 
 	let showToolsButton = false;
 	$: showToolsButton = ($tools ?? []).length > 0 || ($toolServers ?? []).length > 0;
@@ -1622,6 +1632,12 @@
 
 <ToolServersModal bind:show={showTools} {selectedToolIds} />
 <SkillsModal bind:show={showSkills} {selectedSkillIds} />
+<SubagentsModal
+	bind:show={showSubagents}
+	onSelectSubagent={(agent) => {
+		prompt = `[Délégation au Sous-Agent : ${agent.name} (${agent.role})]` + (prompt ? `\n${prompt}` : '');
+	}}
+/>
 
 <InputVariablesModal
 	bind:show={showInputVariablesModal}
@@ -2322,6 +2338,21 @@
 													<Component className="size-4.5" strokeWidth="1.5" />
 												</button>
 											</IntegrationsMenu>
+
+										<Tooltip content="Sous-Agents Roblox Studio (Architecture, Netcode, VFX, ProfileStore)" placement="top">
+											<button
+												type="button"
+												id="subagents-trigger-button"
+												class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full px-2.5 h-[1.875rem] flex items-center gap-1.5 outline-hidden transition border border-gray-200/60 dark:border-gray-700/60 shrink-0 text-xs font-medium ml-1"
+												on:click={() => {
+													showSubagents = true;
+												}}
+												aria-label="Sous-Agents"
+											>
+												<Sparkles className="size-3.5 text-gray-600 dark:text-gray-300" />
+												<span class="hidden sm:inline">Sous-Agents</span>
+											</button>
+										</Tooltip>
 										{/if}
 
 										{#if selectedModelIds.length === 1 && $models.find((m) => m.id === selectedModelIds[0])?.has_user_valves}

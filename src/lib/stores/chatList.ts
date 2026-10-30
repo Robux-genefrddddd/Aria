@@ -248,3 +248,26 @@ export const deleteChatFromList = (chatId: string) => {
 	});
 	pinnedChatsStore.update((items) => items.filter((c) => c.id !== chatId));
 };
+
+export const clearAllChatLists = () => {
+	requestGeneration += 1;
+	currentPage = 1;
+	paginationReady = true;
+	allLoaded = true;
+	loadingNextPage = false;
+	chatsStore.set([]);
+	pinnedChatsStore.set([]);
+	if (typeof window !== 'undefined') {
+		try {
+			localStorage.removeItem('aria_local_chats');
+			const keysToRemove: string[] = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (key && key.startsWith('aria_chat_')) {
+					keysToRemove.push(key);
+				}
+			}
+			keysToRemove.forEach((k) => localStorage.removeItem(k));
+		} catch (e) {}
+	}
+};

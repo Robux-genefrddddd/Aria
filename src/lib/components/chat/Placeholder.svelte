@@ -128,7 +128,7 @@
 						class="text-3xl @sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white"
 						in:fade={{ duration: 100 }}
 					>
-						Bienvenue, {$user?.name || 'Utilisateur'}
+						{$i18n.t('Welcome, {{name}}', { name: $user?.name || 'Creator' })}
 					</h1>
 				</div>
 

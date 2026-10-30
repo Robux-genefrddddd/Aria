@@ -186,7 +186,7 @@
 		if ($showCallOverlay) showCallOverlay.set(false);
 	};
 
-	$: if (mounted && !chatId) closeHandler();
+	$: if (mounted && !chatId && !specialPanel) closeHandler();
 
 	// Helper: is a "special" full-screen panel active?
 	$: specialPanel = $showCallOverlay || $showArtifacts || $showEmbeds;

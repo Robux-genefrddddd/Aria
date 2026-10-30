@@ -64,7 +64,9 @@ export const folders = writable([]);
 
 export const selectedFolder = writable(null);
 
-export const models: Writable<Model[]> = writable([]);
+import { getAriaModelsList } from '$lib/utils/ariaModels';
+
+export const models: Writable<Model[]> = writable(getAriaModelsList());
 
 export const knowledge: Writable<null | Document[]> = writable(null);
 export const tools = writable([]);

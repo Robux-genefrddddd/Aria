@@ -102,11 +102,7 @@
 						{item.label}
 					</div>
 				</Tooltip>
-				{#if ['aria-plus', 'aria-code'].includes(item.value) || item.model?.info?.meta?.beta}
-					<span class="px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
-						BÊTA
-					</span>
-				{/if}
+				
 			</div>
 
 			<div class="flex shrink-0 items-center gap-1.5">

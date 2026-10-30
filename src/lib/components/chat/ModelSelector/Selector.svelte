@@ -129,32 +129,37 @@
 		const viewportBottom = viewport.top + viewport.height;
 		const pad = 8;
 		const gap = 2;
+		const safeContentHeight = contentHeight > 0 ? contentHeight : 280;
+		const safeContentWidth = contentWidth > 0 ? contentWidth : 320;
 		const spaceBelow = viewportBottom - rect.bottom - gap - pad;
 		const spaceAbove = rect.top - viewport.top - gap - pad;
-		const preferredLeft = align === 'end' && contentWidth ? rect.right - contentWidth : rect.left;
-		const maxLeft = contentWidth ? viewportRight - contentWidth - pad : preferredLeft;
+		const preferredLeft = align === 'end' ? rect.right - safeContentWidth : rect.left;
+		const maxLeft = viewportRight - safeContentWidth - pad;
 		const resolvedPlacement =
 			placement === 'auto'
-				? contentHeight && spaceBelow < contentHeight && spaceAbove > spaceBelow
+				? spaceBelow < safeContentHeight && spaceAbove > spaceBelow
 					? 'top'
 					: 'bottom'
 				: placement;
 		const availableHeight = resolvedPlacement === 'top' ? spaceAbove : spaceBelow;
 		const constrainedHeight =
-			contentHeight && availableHeight >= 0
-				? Math.min(contentHeight, availableHeight)
-				: contentHeight;
+			availableHeight >= 0
+				? Math.min(safeContentHeight, availableHeight)
+				: safeContentHeight;
 		const top =
-			resolvedPlacement === 'top' && contentHeight
+			resolvedPlacement === 'top'
 				? rect.top - constrainedHeight - gap
 				: rect.bottom + gap;
 
+		const calcTop = Math.max(viewport.top + pad, Math.min(top, viewportBottom - pad - (constrainedHeight || 0)));
+		const calcLeft = Math.max(viewport.left + pad, Math.min(preferredLeft, maxLeft));
+
 		dropdownPosition = {
-			top: Math.max(viewport.top + pad, Math.min(top, viewportBottom - pad - constrainedHeight)),
-			left: Math.max(viewport.left + pad, Math.min(preferredLeft, maxLeft)),
+			top: isNaN(calcTop) ? (rect.bottom + gap || 80) : calcTop,
+			left: isNaN(calcLeft) ? (rect.left || 16) : calcLeft,
 			maxHeight:
-				contentHeight && availableHeight >= 0 && contentHeight > availableHeight
-					? Math.max(0, availableHeight)
+				availableHeight >= 0 && safeContentHeight > availableHeight
+					? Math.max(120, availableHeight)
 					: undefined
 		};
 	};
@@ -506,14 +511,7 @@
 			$user?.id === 'QH8wKG8nWZVtUQEy2pppuBuNZgC3' ||
 			$user?.email?.toLowerCase() === 'mrpinpinpro@gmail.com';
 
-		if (isBetaModel && !hasBetaAccess) {
-			toast.warning(
-				$i18n.t(
-					'Accès réservé : Ce modèle nécessite le rôle Bêta-Testeur.'
-				)
-			);
-			return;
-		}
+		// beta warning toast removed
 
 		selectedModelIdx = index;
 
